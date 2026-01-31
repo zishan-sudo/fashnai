@@ -1,0 +1,15 @@
+# Windsurf App Deploys Configuration
+project:
+  name: "fashnai"
+  framework: "nextjs"
+  build_command: "npm run build"
+  publish_directory: "frontend/.next"
+  environment_variables:
+    NEXT_PUBLIC_API_URL: "https://fashnai-api.onrender.com"
+
+deployment:
+  provider: "netlify"
+  url_format: "<SUBDOMAIN_NAME>.windsurf.build"
+  
+# This file helps Windsurf App Deploys identify and configure your project
+# for automatic deployment to Netlify
