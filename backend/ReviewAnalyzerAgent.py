@@ -22,10 +22,10 @@ logger.addHandler(handler)
 
 load_dotenv()
 
-# Assign dedicated API key (KEY2) to ReviewAnalyzerAgent
+# Use paid Gemini API key for all agents
 llm = Gemini(
     id='gemini-2.5-flash',
-    api_key=api_key_manager.keys[1] if len(api_key_manager.keys) > 1 else os.getenv("GOOGLE_API_KEY_2"),
+    api_key=os.getenv("GOOGLE_API_KEY_1"),
     vertexai=False
 )
 

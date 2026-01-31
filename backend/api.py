@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
+from contextlib import asynccontextmanager
 import asyncio
 import logging
 
@@ -12,16 +13,21 @@ from api_key_manager import api_key_manager
 
 logger = logging.getLogger(__name__)
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    logger.info("FashnAI API starting with paid Gemini API key")
+    logger.info("Rate limit capacity: 1000+ requests/minute (paid tier)")
+    yield
+    # Shutdown
+    logger.info("FashnAI API shutting down")
+
 app = FastAPI(
     title="FashnAI Fashion Comparison API",
     description="AI-powered fashion product comparison and analysis",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
-
-@app.on_event("startup")
-async def startup_event():
-    logger.info(f"FashnAI API starting with {api_key_manager.total_keys} Gemini API key(s)")
-    logger.info(f"Rate limit capacity: ~{api_key_manager.total_keys * 5} requests/minute")
 
 app.add_middleware(
     CORSMiddleware,
@@ -48,8 +54,9 @@ def root():
     return {
         "message": "FashnAI Fashion Comparison API",
         "version": "1.0.0",
-        "api_keys": api_key_manager.total_keys,
-        "rate_limit": f"~{api_key_manager.total_keys * 5} requests/minute",
+        "api_tier": "Paid",
+        "rate_limit": "1000+ requests/minute",
+        "execution": "Parallel (3 agents)",
         "endpoints": {
             "health": "/health",
             "search": "/api/search (POST)",
@@ -282,4 +289,4 @@ async def get_specifications(request: SearchRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)
