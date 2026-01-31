@@ -1,2 +1,29 @@
-# This file is intentionally left empty
-# All Netlify configuration is in frontend/netlify.toml
+[build]
+  base = "frontend/"
+  command = "npm run build"
+  publish = "out"
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://fashnai-api.onrender.com/api/:splat"
+  status = 200
+
+[build.environment]
+  NEXT_PUBLIC_API_URL = "https://fashnai-api.onrender.com"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self';"
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
