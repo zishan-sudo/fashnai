@@ -16,6 +16,7 @@ interface TryOnResult {
   size_recommendation: string;
   product_name: string;
   warnings: string[];
+  generated_image_base64: string | null;
 }
 
 interface ProductSpecification {
@@ -358,6 +359,28 @@ export default function VirtualTryOn() {
                 </div>
               </div>
             </div>
+
+            {/* Generated Try-On Image */}
+            {result.generated_image_base64 && (
+              <div className="bg-white rounded-2xl shadow-lg p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                  <Sparkles className="w-5 h-5 mr-2 text-purple-600" />
+                  Virtual Try-On Preview
+                </h3>
+                <div className="relative w-full max-w-md mx-auto rounded-xl overflow-hidden border border-gray-200">
+                  <Image
+                    src={result.generated_image_base64}
+                    alt="Virtual try-on preview"
+                    width={512}
+                    height={512}
+                    className="w-full h-auto object-contain"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 text-center mt-3">
+                  AI-generated preview - actual results may vary
+                </p>
+              </div>
+            )}
 
             {/* Warnings */}
             {result.warnings && result.warnings.length > 0 && (

@@ -2,6 +2,7 @@ import logging
 import uuid
 import os
 import base64
+import io
 from textwrap import dedent
 from typing import Optional
 from agno.agent import Agent, RunOutput
@@ -11,6 +12,9 @@ from agno.tools.crawl4ai import Crawl4aiTools
 from agno.media import Image
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
+from google import genai
+from google.genai import types
+from PIL import Image as PILImage
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -45,6 +49,81 @@ class VirtualTryOnResult(BaseModel):
         ..., description="Name of the product being tried on")
     warnings: list[str] = Field(
         default_factory=list, description="Any warnings about fit, style, or compatibility")
+    generated_image_base64: Optional[str] = Field(
+        default=None, description="Base64 encoded generated image of the user wearing the outfit")
+
+
+def generate_tryon_image(
+    user_image_bytes: bytes,
+    product_specs: Optional[dict] = None,
+    product_name: str = "the outfit"
+) -> Optional[str]:
+    """
+    Generate a virtual try-on image using Gemini's image generation.
+
+    Args:
+        user_image_bytes: The user's photo as bytes
+        product_specs: Product specifications dict
+        product_name: Name of the product
+
+    Returns:
+        Base64 encoded generated image, or None if generation fails
+    """
+    try:
+        client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY_1"))
+
+        # Open the user's image
+        user_image = PILImage.open(io.BytesIO(user_image_bytes))
+
+        # Build the prompt for image generation
+        if product_specs:
+            product_description = f"""
+            Product: {product_specs.get('product_name', product_name)}
+            Brand: {product_specs.get('brand', 'Unknown')}
+            Color: {product_specs.get('color', 'Unknown')}
+            Material: {product_specs.get('material', 'Unknown')}
+            Category: {product_specs.get('category', 'clothing')}
+            Fit Type: {product_specs.get('fit_type', 'regular')}
+            """
+        else:
+            product_description = f"Product: {product_name}"
+
+        prompt = f"""Generate a realistic image of this person wearing the following clothing item:
+
+{product_description}
+
+Instructions:
+- Keep the person's face, body shape, and proportions exactly the same
+- Replace or add the clothing item described above
+- Make it look natural and realistic as if they are actually wearing the outfit
+- Maintain the same background and lighting style
+- The clothing should fit naturally on their body
+"""
+
+        logger.info(f"Generating try-on image with Gemini...")
+
+        response = client.models.generate_content(
+            model="gemini-2.5-flash-image",
+            contents=[prompt, user_image],
+            config=types.GenerateContentConfig(
+                response_modalities=['IMAGE', 'TEXT']
+            )
+        )
+
+        # Extract the generated image
+        for part in response.candidates[0].content.parts:
+            if part.inline_data is not None:
+                # Convert to base64
+                image_base64 = base64.b64encode(part.inline_data.data).decode('utf-8')
+                logger.info("Successfully generated try-on image")
+                return f"data:image/png;base64,{image_base64}"
+
+        logger.warning("No image generated in response")
+        return None
+
+    except Exception as e:
+        logger.error(f"Failed to generate try-on image: {e}")
+        return None
 
 
 def virtual_tryon_agent() -> Agent:
@@ -218,10 +297,12 @@ def virtual_tryon(
 
     # Build images list if user provided an image
     images = None
+    user_image_bytes = None  # Store for image generation
     if user_image_base64:
         try:
             # Clean the base64 string and extract mime type
             mime_type = "image/jpeg"  # default
+            raw_base64 = user_image_base64
             if user_image_base64.startswith("data:"):
                 # Extract mime type from data URL (e.g., "data:image/png;base64,...")
                 header, base64_data = user_image_base64.split(",", 1)
@@ -231,20 +312,35 @@ def virtual_tryon(
                     mime_type = "image/gif"
                 elif "image/webp" in header:
                     mime_type = "image/webp"
-                user_image_base64 = base64_data
+                raw_base64 = base64_data
 
             # Decode and create Image object
-            image_bytes = base64.b64decode(user_image_base64)
-            images = [Image(content=image_bytes, mime_type=mime_type)]
+            user_image_bytes = base64.b64decode(raw_base64)
+            images = [Image(content=user_image_bytes, mime_type=mime_type)]
             logger.info(f"User image included in analysis (mime_type: {mime_type})")
         except Exception as e:
             logger.warning(f"Failed to decode user image: {e}")
             images = None
+            user_image_bytes = None
 
     for attempt in range(1, max_retries + 1):
         response = agent.run(input=payload, session_id=str(uuid.uuid4()), images=images)
         try:
-            _ = VirtualTryOnResult.model_validate(response.content)
+            result = VirtualTryOnResult.model_validate(response.content)
+
+            # Generate try-on image if user provided a photo
+            if user_image_bytes:
+                logger.info("Generating virtual try-on image...")
+                generated_image = generate_tryon_image(
+                    user_image_bytes=user_image_bytes,
+                    product_specs=product_specs,
+                    product_name=result.product_name
+                )
+                if generated_image:
+                    result.generated_image_base64 = generated_image
+                    # Update the response content with the new result
+                    response.content = result
+
             return response
         except Exception as e:
             if attempt < max_retries:
