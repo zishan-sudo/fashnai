@@ -5,6 +5,9 @@ AI-powered fashion research and price comparison system using multi-agent archit
 ## Features
 
 - **Fashion Price Comparison Agent**: Finds the same fashion product (clothing, shoes, accessories) across multiple fashion e-commerce websites and compares prices
+- **Review Analysis Agent**: Analyzes customer reviews, sentiment, pros/cons, and provides comprehensive insights
+- **Product Specifications Agent**: Extracts detailed product specifications including materials, sizes, care instructions, and features
+- **Virtual Try-On AI**: AI-powered virtual try-on that provides personalized fit analysis, size recommendations, and styling suggestions based on user characteristics
 
 ## Prerequisites
 
@@ -49,6 +52,7 @@ SERPER_API_KEY=your-serper-api-key
 
 ### 4. Install Dependencies
 
+**Backend Dependencies:**
 Use `uv sync` to create a virtual environment and install all dependencies:
 
 ```bash
@@ -60,6 +64,12 @@ This command will:
 - Install all dependencies specified in `pyproject.toml`
 - Lock dependencies for reproducibility
 
+**Frontend Dependencies:**
+```bash
+cd frontend
+npm install
+cd ..
+```
 
 ### 5. Activate Virtual Environment
 
@@ -71,17 +81,67 @@ source .venv/bin/activate
 .venv\Scripts\activate
 ```
 
-
-### 6.Setup crawl4ai to install browser tools
-```
+### 6. Setup crawl4ai to install browser tools
+```bash
 source .venv/bin/activate
 crawl4ai-setup
 ```
 
-### 7.To Enable debugging
-`export AGNO_DEBUG=true`
+### 7. To Enable debugging
+```bash
+export AGNO_DEBUG=true
+```
 
 ## Usage
+
+### Quick Start - Run Everything
+
+To start the full application (backend + frontend):
+
+```bash
+./start.sh
+```
+
+This will start:
+- **Backend (Agents)**: http://localhost:8000
+- **Frontend**: http://localhost:3000
+
+To stop all services, press `Ctrl+C`.
+
+View logs:
+```bash
+# Backend logs
+tail -f backend_log.txt
+
+# Frontend logs
+tail -f frontend_log.txt
+```
+
+### Manual Start
+
+**Start Backend API Server:**
+```bash
+uv run backend/api.py
+```
+
+**Start Frontend:**
+```bash
+cd frontend
+npm run dev
+```
+
+**Alternative - AgentOS Playground (for testing agents directly):**
+```bash
+uv run backend/playground.py
+```
+Note: The playground is for agent testing with AgentOS UI, not for the web frontend.
+
+### Using the Web Application
+
+1. **Search for a Product**: Paste any fashion product URL on the home page
+2. **View Analysis**: See price comparisons, reviews, and specifications
+3. **Try Virtual Try-On**: Click the "Try Virtual Try-On" button on any product page
+4. **Get Personalized Insights**: Enter your size, height, and body type for AI-powered fit analysis and styling recommendations
 
 ### Fashion Price Comparison Agent
 
@@ -95,39 +155,71 @@ result = compare_prices("https://www.asos.com/product/example-dress")
 print(result.content)
 ```
 
+### Virtual Try-On Agent
 
-### Activate environment and run playground
+Get AI-powered fit analysis and styling recommendations:
+
+```python
+from backend.VirtualTryOnAgent import virtual_tryon
+
+# Example with user characteristics
+result = virtual_tryon(
+    product_url="https://en.zalando.de/bershka-baby-gifts-black-bej22s0jx-q11.html",
+    user_size="M",
+    user_height="5'9\"",
+    user_body_type="athletic"
+)
+print(result.content)
+```
+
+### AgentOS Integration
 - Rename .env-template to .env and set the API Keys
 - Is necessary to create an account with agno to use the playground, even locally
-```
-uv run backend/playground.py
-```
-
-Connect to  AgentOS UI for a readymade interface to interact with the agent as mentioend here https://docs.agno.com/introduction
+- Connect to AgentOS UI for a readymade interface to interact with the agent as mentioned here https://docs.agno.com/introduction
 
 ## Project Structure
 
 ```
-styleiq/
+fashnai/
 ├── backend/
-│   ├── ApparelResearchAgent.py  # Apparel fit analysis agent
 │   ├── PriceAgent.py            # Fashion price comparison agent
-│   └── playground.py            # Testing and experimentation
-├── .env                         # Environment variables (not in git)
-├── pyproject.toml              # Project dependencies
+│   ├── ReviewAnalyzerAgent.py   # Review analysis agent
+│   ├── ProductSpecsAgent.py     # Product specifications agent
+│   ├── VirtualTryOnAgent.py     # Virtual try-on AI agent
+│   ├── api.py                   # FastAPI server
+│   ├── api_key_manager.py       # API key management
+│   └── playground.py            # AgentOS playground
+├── frontend/                    # Next.js frontend application
+│   ├── app/
+│   │   ├── page.tsx            # Home page
+│   │   ├── product/[url]/      # Product details page
+│   │   ├── try-on/             # Virtual try-on page
+│   │   └── layout.tsx          # App layout
+│   ├── package.json            # Frontend dependencies
+│   └── ...
+├── .env                        # Environment variables (not in git)
+├── pyproject.toml              # Backend dependencies
+├── start.sh                    # Startup script for full application
 └── README.md                   # This file
 ```
 
 ## Dependencies
 
-Key dependencies include:
+**Backend:**
 - **agno**: Multi-agent framework
-- **google-genai**: Google Gemini AI models
+- **google-genai**: Google Gemini AI models (including Vision API for virtual try-on)
 - **crawl4ai**: Web scraping and crawling
-- **duckduckgo-search**: Web search functionality
 - **google-search-results**: Serper API integration
+- **fastapi**: REST API framework
+- **pillow**: Image processing
 - **pydantic**: Data validation and schema definition
-- **fastapi**: API framework (for future endpoints)
+
+**Frontend:**
+- **Next.js 14**: React framework
+- **TypeScript**: Type-safe JavaScript
+- **Tailwind CSS**: Utility-first CSS framework
+- **Axios**: HTTP client
+- **Lucide React**: Icon library
 
 See `pyproject.toml` for the complete list.
 

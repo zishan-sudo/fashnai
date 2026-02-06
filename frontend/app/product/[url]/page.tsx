@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, ExternalLink, Star, TrendingUp, TrendingDown, Package, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Star, TrendingUp, TrendingDown, Package, ShoppingBag, Sparkles } from 'lucide-react';
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -190,6 +190,20 @@ export default function ProductDetails() {
                 <span className="ml-1 text-sm text-gray-500">({reviews.total_reviews} reviews)</span>
               </div>
             </div>
+          </div>
+          {/* Virtual Try-On Button */}
+          <div className="mt-4">
+            <button
+              onClick={() => {
+                // Cache product specs for virtual try-on to avoid re-crawling
+                sessionStorage.setItem('tryon_product_specs', JSON.stringify(specifications));
+                router.push(`/try-on?url=${encodeURIComponent(params.url as string)}`);
+              }}
+              className="w-full py-4 px-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all flex items-center justify-center space-x-2 shadow-lg"
+            >
+              <Sparkles className="w-5 h-5" />
+              <span>Try Virtual Try-On</span>
+            </button>
           </div>
         </div>
 

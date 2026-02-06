@@ -9,6 +9,7 @@ import logging
 from PriceAgent import compare_prices, PriceComparisonResult
 from ReviewAnalyzerAgent import analyze_reviews, ReviewAnalysis
 from ProductSpecsAgent import extract_specifications, ProductSpecification
+from VirtualTryOnAgent import virtual_tryon, VirtualTryOnResult
 from api_key_manager import api_key_manager
 
 logger = logging.getLogger(__name__)
@@ -42,6 +43,26 @@ class SearchRequest(BaseModel):
     product_url: str
 
 
+class CachedProductSpecs(BaseModel):
+    product_name: str
+    brand: str
+    category: str
+    color: str
+    material: str
+    sizes_available: list[str] = []
+    care_instructions: Optional[str] = None
+    features: list[str] = []
+    fit_type: Optional[str] = None
+
+class VirtualTryOnRequest(BaseModel):
+    product_url: str
+    user_size: Optional[str] = None
+    user_height: Optional[str] = None
+    user_body_type: Optional[str] = None
+    user_image_base64: Optional[str] = None  # Base64 encoded user photo for personalized analysis
+    product_specs: Optional[CachedProductSpecs] = None  # Pre-fetched product specs to avoid re-crawling
+
+
 class ProductAnalysisResponse(BaseModel):
     prices: PriceComparisonResult
     reviews: ReviewAnalysis
@@ -62,7 +83,8 @@ def root():
             "search": "/api/search (POST)",
             "prices": "/api/prices (POST)",
             "reviews": "/api/reviews (POST)",
-            "specs": "/api/specs (POST)"
+            "specs": "/api/specs (POST)",
+            "virtual_tryon": "/api/virtual-tryon (POST)"
         }
     }
 
@@ -285,6 +307,42 @@ async def get_specifications(request: SearchRequest):
     except Exception as e:
         logger.error(f"Error extracting specifications: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Specification extraction failed: {str(e)}")
+
+
+@app.post("/api/virtual-tryon", response_model=VirtualTryOnResult)
+async def virtual_tryon_endpoint(request: VirtualTryOnRequest):
+    """
+    Virtual try-on analysis for fashion products
+    """
+    try:
+        logger.info(f"Starting virtual try-on for: {request.product_url}")
+        # Convert product_specs to dict if provided
+        product_specs_dict = request.product_specs.model_dump() if request.product_specs else None
+
+        result = await asyncio.to_thread(
+            virtual_tryon,
+            request.product_url,
+            request.user_size,
+            request.user_height,
+            request.user_body_type,
+            request.user_image_base64,
+            product_specs_dict
+        )
+        if isinstance(result.content, str):
+            # Agent returned error string instead of model
+            return VirtualTryOnResult(
+                generated_image_description="Virtual try-on unavailable",
+                fit_analysis=f"Error: {result.content}",
+                style_recommendations=[],
+                confidence_score=0.0,
+                size_recommendation="Unable to determine",
+                product_name="Unknown",
+                warnings=["Service temporarily unavailable"]
+            )
+        return result.content
+    except Exception as e:
+        logger.error(f"Error in virtual try-on: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Virtual try-on failed: {str(e)}")
 
 
 if __name__ == "__main__":
