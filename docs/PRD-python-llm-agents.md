@@ -1,9 +1,11 @@
 # Flash.co Clone - Hackathon Edition (Python + LLM Agents)
 
-**Version:** 3.0 (Python + Agent-Based Web Scraping)  
-**Stack:** Python FastAPI + LLM Web Parsers + Next.js Frontend  
-**Duration:** 24-48 hours  
+**Version:** 3.0 (Python + Agent-Based Web Scraping)
+**Stack:** Python FastAPI + LLM Web Parsers + Next.js Frontend
+**Duration:** 24-48 hours
 **Scope:** MVP with AI agents for web scraping
+
+> **Update (February 2026):** This is the original PRD. The project has since been rebranded as **FashnAI** and enhanced with a **Virtual Try-On agent** that provides AI-powered fit analysis, size recommendations, and styling suggestions using Gemini 2.5 Flash Image. See [ARCHITECTURE.md](ARCHITECTURE.md) for current system design.
 
 ---
 

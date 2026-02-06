@@ -1,8 +1,10 @@
 # FashnAI - Technical Specification (TypeScript Frontend + Python Backend)
 
-**Version:** 4.0  
-**Last Updated:** January 2026  
+**Version:** 4.1
+**Last Updated:** February 2026
 **Status:** Implemented & Tested
+
+> **Update (February 2026):** Added **Virtual Try-On Agent** with AI-powered image generation using Gemini 2.5 Flash Image. The agent provides personalized fit analysis, size recommendations, and styling suggestions based on user characteristics and product specifications. New endpoint: `POST /api/virtual-tryon`. See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed implementation.
 
 ---
 

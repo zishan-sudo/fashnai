@@ -1,14 +1,14 @@
 # FashnAI Architecture Documentation
 
-**Version:** 1.0  
-**Last Updated:** January 2026  
+**Version:** 1.1
+**Last Updated:** February 2026
 **Project:** AI-Powered Fashion Product Comparison Platform
 
 ---
 
 ## Overview
 
-FashnAI is a full-stack application that uses AI agents to compare fashion products across multiple e-commerce websites, analyze customer reviews, and extract detailed product specifications.
+FashnAI is a full-stack application that uses AI agents to compare fashion products across multiple e-commerce websites, analyze customer reviews, extract detailed product specifications, and provide AI-powered virtual try-on with personalized fit analysis and styling recommendations.
 
 ---
 
@@ -26,10 +26,14 @@ FashnAI is a full-stack application that uses AI agents to compare fashion produ
 │  │                                                      │  │
 │  │  Components:                                        │  │
 │  │  ├─ Home Page (Search Interface)                   │  │
-│  │  └─ Product Details Page (Tabbed Results)          │  │
-│  │      ├─ Price Comparison Tab                       │  │
-│  │      ├─ Review Analysis Tab                        │  │
-│  │      └─ Product Specifications Tab                 │  │
+│  │  ├─ Product Details Page (Tabbed Results)          │  │
+│  │  │   ├─ Price Comparison Tab                       │  │
+│  │  │   ├─ Review Analysis Tab                        │  │
+│  │  │   └─ Product Specifications Tab                 │  │
+│  │  └─ Virtual Try-On Page                            │  │
+│  │      ├─ User Characteristics Input                 │  │
+│  │      ├─ Photo Upload                               │  │
+│  │      └─ AI-Generated Try-On Image                  │  │
 │  └─────────────────────────────────────────────────────┘  │
 └──────────────────────┬──────────────────────────────────────┘
                        │
@@ -38,6 +42,7 @@ FashnAI is a full-stack application that uses AI agents to compare fashion produ
                        │ - POST /api/prices
                        │ - POST /api/reviews
                        │ - POST /api/specs
+                       │ - POST /api/virtual-tryon
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
 │                   API GATEWAY                               │
@@ -61,19 +66,20 @@ FashnAI is a full-stack application that uses AI agents to compare fashion produ
 │                   AI AGENT LAYER                            │
 │                   (Agno Framework)                          │
 │                                                             │
-│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────┐ │
-│  │  PriceAgent      │  │ ReviewAnalyzer   │  │ SpecsAgent│ │
-│  │                  │  │ Agent            │  │          │ │
-│  │  Finds product   │  │ Analyzes reviews │  │ Extracts │ │
-│  │  across fashion  │  │ for sentiment,   │  │ materials│ │
-│  │  retailers and   │  │ pros, cons, and  │  │ sizes,   │ │
-│  │  compares prices │  │ common themes    │  │ features │ │
-│  └────────┬─────────┘  └────────┬─────────┘  └────┬─────┘ │
-│           │                     │                  │       │
-│           └─────────────────────┴──────────────────┘       │
-│                                 │                          │
-│                    Gemini 2.5 Flash API                    │
-│                    (Google AI)                             │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────┐  ┌──────────┐ │
+│  │ PriceAgent   │  │ Review       │  │ Specs    │  │ Virtual  │ │
+│  │              │  │ Analyzer     │  │ Agent    │  │ TryOn    │ │
+│  │ Finds product│  │ Analyzes     │  │ Extracts │  │ Provides │ │
+│  │ across       │  │ reviews for  │  │ materials│  │ fit      │ │
+│  │ fashion      │  │ sentiment,   │  │ sizes,   │  │ analysis │ │
+│  │ retailers &  │  │ pros, cons,  │  │ features │  │ & styling│ │
+│  │ prices       │  │ themes       │  │          │  │ advice   │ │
+│  └──────┬───────┘  └──────┬───────┘  └────┬─────┘  └────┬─────┘ │
+│         │                 │                │             │       │
+│         └─────────────────┴────────────────┴─────────────┘       │
+│                                 │                                │
+│           Gemini 2.5 Flash API + Gemini 2.5 Flash Image         │
+│                          (Google AI)                             │
 └──────────────────────┬──────────────────────────────────────┘
                        │
                        │ Tool Invocation
@@ -167,6 +173,8 @@ backend/
 ├── PriceAgent.py                   # Price comparison agent
 ├── ReviewAnalyzerAgent.py          # Review analysis agent
 ├── ProductSpecsAgent.py            # Specifications agent
+├── VirtualTryOnAgent.py            # Virtual try-on AI agent
+├── api_key_manager.py              # API key rotation manager
 └── playground.py                   # AgentOS playground
 ```
 
@@ -180,6 +188,7 @@ backend/
 | `/api/prices` | POST | Price comparison only | 10-20s |
 | `/api/reviews` | POST | Review analysis only | 10-20s |
 | `/api/specs` | POST | Product specifications only | 10-20s |
+| `/api/virtual-tryon` | POST | Virtual try-on with fit analysis | 15-30s |
 
 **Key Features:**
 - **Async Processing:** Parallel agent execution
@@ -280,6 +289,41 @@ backend/
 }
 ```
 
+#### 3.4 VirtualTryOnAgent
+
+**Purpose:** Provide AI-powered virtual try-on with personalized fit analysis and styling recommendations
+
+**Process:**
+1. Analyze product details (with optional pre-fetched specs to avoid re-crawling)
+2. Process user characteristics (size, height, body type)
+3. Analyze user photo if provided (using Gemini Vision)
+4. Generate realistic try-on image using Gemini 2.5 Flash Image
+5. Provide fit analysis based on body type and garment specifications
+6. Recommend optimal size
+7. Generate 3-5 personalized styling suggestions
+8. Assign confidence score (0.0-1.0)
+
+**Output Schema:**
+```typescript
+{
+  generated_image_description: string;        // Detailed description of how garment looks on user
+  fit_analysis: string;                       // Analysis of garment fit on user's body type
+  style_recommendations: string[];            // 3-5 styling suggestions
+  confidence_score: number;                   // 0.0-1.0 reliability score
+  size_recommendation: string;                // Recommended size based on specs & measurements
+  product_name: string;                       // Name of product being tried on
+  warnings: string[];                         // Warnings about fit, style, compatibility
+  generated_image_base64: string | null;      // Base64 encoded generated try-on image
+}
+```
+
+**Key Features:**
+- **Image Generation:** Uses Gemini 2.5 Flash Image to create realistic try-on photos
+- **Cached Product Specs:** Accepts pre-fetched product data to avoid redundant crawling
+- **User Photo Analysis:** Processes user photos to determine body shape and proportions
+- **Personalized Recommendations:** Tailored advice based on user characteristics
+- **Confidence Scoring:** Transparent reliability assessment
+
 ---
 
 ### 4. Tools & Services
@@ -304,14 +348,18 @@ backend/
 
 #### 4.3 Google Gemini API
 
-- **Model:** Gemini 2.5 Flash
-- **Purpose:** Intelligent data extraction and analysis
+- **Models:**
+  - Gemini 2.5 Flash (text analysis & extraction)
+  - Gemini 2.5 Flash Image (virtual try-on image generation)
+- **Purpose:** Intelligent data extraction, analysis, and image generation
 - **Features:**
   - Fast response times
   - Structured output (JSON mode)
   - Multi-turn conversations
   - Tool calling support
-- **Authentication:** API key (GOOGLE_API_KEY)
+  - Vision capabilities (image analysis)
+  - Image generation (try-on photos)
+- **Authentication:** API key (GOOGLE_API_KEY_1, _2, _3)
 
 ---
 
@@ -348,6 +396,46 @@ backend/
 - Backend → Frontend: ~50ms
 - **Total:** ~30-60 seconds
 
+### Virtual Try-On Flow
+
+```
+1. User navigates to Virtual Try-On page
+   ↓
+2. User inputs characteristics (size, height, body type)
+3. User optionally uploads photo
+   ↓
+4. Frontend sends POST /api/virtual-tryon
+   ├─ product_url
+   ├─ user_size, user_height, user_body_type
+   ├─ user_image_base64 (optional)
+   └─ product_specs (cached from previous analysis)
+   ↓
+5. VirtualTryOnAgent:
+   ├─ Analyzes product details (or uses cached specs)
+   ├─ Processes user photo with Gemini Vision (if provided)
+   ├─ Generates try-on image with Gemini 2.5 Flash Image
+   ├─ Analyzes fit based on body type & garment specs
+   ├─ Recommends size
+   ├─ Generates styling suggestions
+   └─ Returns VirtualTryOnResult
+   ↓
+6. Frontend displays:
+   ├─ Generated try-on image
+   ├─ Fit analysis
+   ├─ Size recommendation
+   ├─ Styling suggestions
+   └─ Confidence score & warnings
+```
+
+**Timing:**
+- Frontend → Backend: ~50ms
+- Product analysis (or cached): 0-10s
+- User photo processing: 2-5s
+- Image generation: 5-10s
+- Fit analysis & recommendations: 3-5s
+- Backend → Frontend: ~50ms
+- **Total:** ~15-30 seconds (varies with image generation)
+
 ---
 
 ## Database Schema
@@ -358,6 +446,7 @@ backend/
 - `price_comparison_agent` - Price agent sessions
 - `review_analyzer_agent` - Review agent sessions
 - `product_specs_agent` - Specs agent sessions
+- `virtual_tryon_agent` - Virtual try-on agent sessions
 
 **Purpose:** Store agent conversation history and state
 
@@ -369,7 +458,9 @@ backend/
 - Stored in `.env` file (not in version control)
 - Loaded via `python-dotenv`
 - Required keys:
-  - `GOOGLE_API_KEY` - Gemini API
+  - `GOOGLE_API_KEY_1` - Gemini API (PriceAgent & VirtualTryOnAgent)
+  - `GOOGLE_API_KEY_2` - Gemini API (ReviewAnalyzerAgent)
+  - `GOOGLE_API_KEY_3` - Gemini API (ProductSpecsAgent)
   - `SERPER_API_KEY` - Serper search API
 
 ### CORS
@@ -454,11 +545,17 @@ backend/
 1. **Caching Layer:** Redis for repeated searches
 2. **Price History:** Track price changes over time
 3. **Price Alerts:** Notify users of price drops
-4. **User Accounts:** Save favorite products
+4. **User Accounts:** Save favorite products and try-on results
 5. **Affiliate Links:** Monetization through affiliate programs
 6. **More Retailers:** Expand to 20+ fashion websites
 7. **Image Search:** Find products by image
-8. **Size Recommendations:** AI-powered fit suggestions
+8. ~~**Size Recommendations:** AI-powered fit suggestions~~ ✅ **COMPLETED** (Virtual Try-On feature)
+9. **Enhanced Virtual Try-On:**
+   - Full-body visualization
+   - Multiple outfit combinations
+   - AR try-on using device camera
+10. **Body Measurement Tools:** Guide users to measure themselves accurately
+11. **Style Profile:** Learn user preferences over time for better recommendations
 
 ### Technical Improvements
 1. **Rate Limiting:** Prevent API abuse
@@ -485,12 +582,20 @@ backend/
 3. Access at `http://localhost:3000`
 
 ### Testing
-1. Test individual agents: `python backend/PriceAgent.py`
+1. Test individual agents:
+   - `python backend/PriceAgent.py`
+   - `python backend/ReviewAnalyzerAgent.py`
+   - `python backend/ProductSpecsAgent.py`
+   - `python backend/VirtualTryOnAgent.py`
 2. Test API: `curl http://localhost:8000/health`
 3. Test frontend: Open browser to `localhost:3000`
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** January 25, 2026  
+**Document Version:** 1.1
+**Last Updated:** February 6, 2026
 **Maintained By:** FashnAI Development Team
+
+**Changelog:**
+- **v1.1 (Feb 2026):** Added Virtual Try-On agent with AI image generation
+- **v1.0 (Jan 2026):** Initial architecture with 3 agents (Price, Review, Specs)

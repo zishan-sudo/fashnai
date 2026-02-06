@@ -13,6 +13,7 @@ AI-powered fashion research and price comparison system using multi-agent archit
 
 - Python 3.13 or higher
 - [uv](https://github.com/astral-sh/uv) package manager
+- Node.js 18+ and npm (for frontend)
 - Gemini API key (for Google AI)
 - Serper API key (for web search)
 
@@ -34,7 +35,7 @@ powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 
 ```bash
 git clone <repository-url>
-cd /home/zishan/PycharmProjects/fashnai
+cd fashnai
 ```
 
 ### 3. Set Up Environment
@@ -42,7 +43,15 @@ cd /home/zishan/PycharmProjects/fashnai
 Create a `.env` file in the project root with the following variables:
 
 ```env
-GEMINI_API_KEY=your-gemini-api-key
+GOOGLE_API_KEY=your-google-api-key
+SERPER_API_KEY=your-serper-api-key
+```
+
+**Note:** For production with multiple API keys to avoid rate limits, you can use:
+```env
+GOOGLE_API_KEY_1=your-first-google-api-key
+GOOGLE_API_KEY_2=your-second-google-api-key
+GOOGLE_API_KEY_3=your-third-google-api-key
 SERPER_API_KEY=your-serper-api-key
 ```
 
@@ -259,10 +268,14 @@ python -m pytest
 
 The agents use the following APIs:
 
-- **Gemini API**: Used for the AI model (Gemini 2.0 Flash)
+- **Gemini API**: Used for the AI models (Gemini 2.5 Flash for text analysis, Gemini 2.5 Flash Image for virtual try-on)
 - **Serper API**: Used for web search functionality
 
 Both API keys should be configured in your `.env` file as shown in the setup section.
+
+**API Key Usage:**
+- `GOOGLE_API_KEY` (or `GOOGLE_API_KEY_1`): Used by all agents
+- For better rate limit handling, you can configure multiple keys (KEY_1, KEY_2, KEY_3)
 
 ## Troubleshooting
 
