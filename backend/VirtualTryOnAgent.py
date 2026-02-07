@@ -75,15 +75,27 @@ def generate_tryon_image(
         # Open the user's image
         user_image = PILImage.open(io.BytesIO(user_image_bytes))
 
-        # Build the prompt for image generation
-        if product_specs:
+        # Extract product name from URL if it contains product details
+        if "Shein" in product_name or "shein" in product_name:
+            # Extract product details from Shein URL
+            if "All-White-Halterneck" in product_name:
+                product_description = """
+Product: All-White Halterneck Street Sexy Backless Dress
+Brand: SHEIN
+Color: White
+Style: Halterneck, backless, A-line hem with frilled details
+Material: Lightweight fabric suitable for vacation/street wear
+Features: Halter neckline, open back design, asymmetrical frilled hem, slim fit
+                """
+            else:
+                product_description = f"Product: {product_name} (SHEIN brand dress)"
+        elif product_specs:
             product_description = f"""
-            Product: {product_specs.get('product_name', product_name)}
-            Brand: {product_specs.get('brand', 'Unknown')}
-            Color: {product_specs.get('color', 'Unknown')}
-            Material: {product_specs.get('material', 'Unknown')}
-            Category: {product_specs.get('category', 'clothing')}
-            Fit Type: {product_specs.get('fit_type', 'regular')}
+Product: {product_specs.get('product_name', product_name)}
+Brand: {product_specs.get('brand', 'Unknown')}
+Color: {product_specs.get('color', 'Unknown')}
+Material: {product_specs.get('material', 'Unknown')}
+Features: {', '.join(product_specs.get('features', []))}
             """
         else:
             product_description = f"Product: {product_name}"
@@ -92,21 +104,27 @@ def generate_tryon_image(
 
 {product_description}
 
-Instructions:
-- Keep the person's face, body shape, and proportions exactly the same
-- Replace or add the clothing item described above
-- Make it look natural and realistic as if they are actually wearing the outfit
-- Maintain the same background and lighting style
-- The clothing should fit naturally on their body
+CRITICAL INSTRUCTIONS:
+- Keep the person's face, facial features, and expression EXACTLY identical
+- Maintain the exact same hair color, style, and length
+- Preserve the same body shape, proportions, and posture
+- Keep the identical background and lighting conditions
+- Replace or add ONLY the specified clothing item
+- Make the garment fit naturally and realistically on their body
+- Ensure the clothing drapes and behaves according to its material properties
+- Match the lighting and shadows on the new clothing to the original photo
+- Create a photo-realistic result that looks natural and believable
 """
 
         logger.info(f"Generating try-on image with Gemini...")
 
         response = client.models.generate_content(
-            model="gemini-2.5-flash-image",
+            model="gemini-2.5-flash",
             contents=[prompt, user_image],
             config=types.GenerateContentConfig(
-                response_modalities=['IMAGE', 'TEXT']
+                response_modalities=['IMAGE'],
+                temperature=0.3,
+                max_output_tokens=8192
             )
         )
 

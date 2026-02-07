@@ -138,6 +138,33 @@ def price_agent() -> Agent:
     return agent
 
 
+def extract_price_from_url(product_url: str) -> ProductListing:
+    """Extract basic price information from product URL when API fails"""
+    import re
+    from urllib.parse import unquote
+    
+    # Determine website from URL
+    website_name = "Unknown"
+    if "shein.com" in product_url.lower():
+        website_name = "SHEIN"
+    elif "asos.com" in product_url.lower():
+        website_name = "ASOS"
+    elif "zalando" in product_url.lower():
+        website_name = "Zalando"
+    elif "zara.com" in product_url.lower():
+        website_name = "Zara"
+    elif "hm.com" in product_url.lower():
+        website_name = "H&M"
+    
+    # Create fallback listing
+    return ProductListing(
+        website_name=website_name,
+        product_url=product_url,
+        price="N/A (Price extraction unavailable)",
+        availability="N/A (Availability check unavailable)",
+        seller_info=f"{website_name} (Direct from retailer)"
+    )
+
 def compare_prices(product_url: str, max_retries: int = 3) -> RunOutput:
     payload = dedent(f"""
         product_url: {product_url}
@@ -157,7 +184,25 @@ def compare_prices(product_url: str, max_retries: int = 3) -> RunOutput:
                 logger.error(f"Attempt {attempt} failed: {e}. Retrying...")
                 continue
             else:
-                logger.error(f"All {max_retries} attempts failed. Returning last response.")
+                logger.error(f"All {max_retries} attempts failed. Using fallback price method.")
+                
+                # Extract basic info from URL for product name
+                from ProductSpecsAgent import extract_basic_info_from_url
+                basic_info = extract_basic_info_from_url(product_url)
+                
+                # Create fallback price comparison
+                original_listing = extract_price_from_url(product_url)
+                
+                fallback_result = PriceComparisonResult(
+                    original_product_name=basic_info["product_name"],
+                    original_product_url=product_url,
+                    product_listings=[original_listing],
+                    search_summary=f"Price comparison unavailable due to search service limitations. The product '{basic_info['product_name']}' from {basic_info['brand']} was identified but cross-retailer price comparison could not be performed.",
+                    sources_checked=[product_url]
+                )
+                
+                # Create mock response with fallback data
+                response.content = fallback_result
                 return response
 
 

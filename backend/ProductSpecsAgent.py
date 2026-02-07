@@ -31,14 +31,14 @@ llm = Gemini(
 
 
 class ProductSpecification(BaseModel):
-    product_name: str = Field(..., description="Full product name/title")
-    brand: str = Field(..., description="Brand name")
-    category: str = Field(..., description="Product category (e.g., Sneakers, Dress, Jacket)")
-    color: str = Field(..., description="Color or colorway")
-    material: str = Field(..., description="Primary material or fabric composition")
-    sizes_available: List[str] = Field(..., description="List of available sizes")
+    product_name: str = Field(default="Unknown", description="Full product name/title")
+    brand: str = Field(default="Unknown", description="Brand name")
+    category: str = Field(default="Unknown", description="Product category (e.g., Sneakers, Dress, Jacket)")
+    color: str = Field(default="Unknown", description="Color or colorway")
+    material: str = Field(default="Unknown", description="Primary material or fabric composition")
+    sizes_available: List[str] = Field(default_factory=list, description="List of available sizes")
     care_instructions: Optional[str] = Field(None, description="Care and washing instructions")
-    features: List[str] = Field(..., description="Key product features (3-7 items)")
+    features: List[str] = Field(default_factory=list, description="Key product features (3-7 items)")
     dimensions: Optional[Dict[str, str]] = Field(None, description="Product dimensions if applicable")
     weight: Optional[str] = Field(None, description="Product weight if applicable")
     style_number: Optional[str] = Field(None, description="Style number, SKU, or product code")
@@ -46,7 +46,7 @@ class ProductSpecification(BaseModel):
     sustainability: Optional[str] = Field(None, description="Sustainability or eco-friendly information")
     fit_type: Optional[str] = Field(None, description="Fit type (e.g., Regular Fit, Slim Fit, Oversized)")
     additional_specs: Dict[str, str] = Field(default_factory=dict, description="Any additional specifications")
-    sources: List[str] = Field(..., description="URLs where specifications were found")
+    sources: List[str] = Field(default_factory=list, description="URLs where specifications were found")
 
 
 def product_specs_agent() -> Agent:
@@ -143,6 +143,79 @@ def product_specs_agent() -> Agent:
     return agent
 
 
+def extract_basic_info_from_url(product_url: str) -> Dict:
+    """Extract basic product information from URL structure when scraping fails"""
+    import re
+    from urllib.parse import unquote
+    
+    # Initialize with defaults
+    info = {
+        "product_name": "Unknown",
+        "brand": "Unknown", 
+        "category": "Unknown",
+        "color": "Unknown",
+        "material": "Unknown"
+    }
+    
+    try:
+        # Decode URL
+        decoded_url = unquote(product_url)
+        
+        # Extract brand from domain
+        if "shein.com" in product_url.lower():
+            info["brand"] = "SHEIN"
+        elif "asos.com" in product_url.lower():
+            info["brand"] = "ASOS"
+        elif "zalando" in product_url.lower():
+            info["brand"] = "Zalando"
+        elif "zara.com" in product_url.lower():
+            info["brand"] = "Zara"
+        elif "hm.com" in product_url.lower():
+            info["brand"] = "H&M"
+        
+        # Extract product name from URL path
+        # Look for product names in URL segments
+        url_parts = decoded_url.split('/')
+        for part in url_parts:
+            if len(part) > 10 and any(keyword in part.lower() for keyword in 
+                ['dress', 'shirt', 'top', 'jacket', 'pants', 'jeans', 'skirt', 'blouse', 'sweater']):
+                # Clean up the URL segment to make it readable
+                product_name = part.replace('-', ' ').replace('_', ' ')
+                # Remove file extensions and parameters
+                product_name = re.sub(r'\.(html|php|aspx).*$', '', product_name)
+                # Remove product IDs and codes
+                product_name = re.sub(r'[p-]\d+.*$', '', product_name)
+                # Capitalize words
+                product_name = ' '.join(word.capitalize() for word in product_name.split())
+                if len(product_name) > 5:  # Only use if meaningful length
+                    info["product_name"] = product_name
+                    break
+        
+        # Extract color information from URL
+        color_keywords = ['white', 'black', 'red', 'blue', 'green', 'yellow', 'pink', 'purple', 'brown', 'gray', 'grey', 'navy', 'beige', 'cream']
+        for color in color_keywords:
+            if color in decoded_url.lower():
+                info["color"] = color.capitalize()
+                break
+        
+        # Extract category from URL
+        category_keywords = {
+            'dress': 'Dress', 'shirt': 'Shirt', 'top': 'Top', 'blouse': 'Blouse',
+            'jacket': 'Jacket', 'coat': 'Coat', 'pants': 'Pants', 'jeans': 'Jeans',
+            'skirt': 'Skirt', 'sweater': 'Sweater', 'hoodie': 'Hoodie'
+        }
+        for keyword, category in category_keywords.items():
+            if keyword in decoded_url.lower():
+                info["category"] = category
+                break
+                
+        logger.info(f"Extracted basic info from URL: {info}")
+        return info
+        
+    except Exception as e:
+        logger.error(f"Failed to extract info from URL: {e}")
+        return info
+
 def extract_specifications(product_url: str, max_retries: int = 3) -> RunOutput:
     payload = dedent(f"""
         product_url: {product_url}
@@ -155,14 +228,30 @@ def extract_specifications(product_url: str, max_retries: int = 3) -> RunOutput:
     for attempt in range(1, max_retries + 1):
         response = agent.run(input=payload, session_id=str(uuid.uuid4()))
         try:
-            _ = ProductSpecification.model_validate(response.content)
+            validated = ProductSpecification.model_validate(response.content)
             return response
         except Exception as e:
             if attempt < max_retries:
                 logger.error(f"Attempt {attempt} failed: {e}. Retrying...")
                 continue
             else:
-                logger.error(f"All {max_retries} attempts failed. Returning last response.")
+                logger.error(f"All {max_retries} attempts failed. Using URL fallback method.")
+                
+                # Fallback: Extract basic info from URL
+                basic_info = extract_basic_info_from_url(product_url)
+                
+                fallback_specs = ProductSpecification(
+                    product_name=basic_info["product_name"],
+                    brand=basic_info["brand"],
+                    category=basic_info["category"], 
+                    color=basic_info["color"],
+                    material=basic_info["material"],
+                    sources=[product_url],
+                    additional_specs={"extraction_method": "URL parsing fallback"}
+                )
+                
+                # Create a mock response with the fallback data
+                response.content = fallback_specs
                 return response
 
 
