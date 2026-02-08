@@ -19,3 +19,4 @@ pillow>=11.0.0
 python-multipart>=0.0.20
 scikit-learn>=1.6.1
 sqlalchemy>=2.0.40
+playwright>=1.40.0

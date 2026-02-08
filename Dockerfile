@@ -18,6 +18,10 @@ COPY requirements.txt ./
 # Install dependencies
 RUN uv pip install --system -r requirements.txt
 
+# Install Playwright for web scraping
+RUN uv pip install playwright
+RUN playwright install --with-deps
+
 # Copy application code
 COPY ./backend ./backend/
 
