@@ -10,7 +10,6 @@ from agno.tools.serper import SerperTools
 from agno.tools.crawl4ai import Crawl4aiTools
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
-from api_key_manager import api_key_manager
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -24,8 +23,8 @@ load_dotenv()
 
 # Use paid Gemini API key for all agents
 llm = Gemini(
-    id='gemini-2.5-flash',
-    api_key=os.getenv("GOOGLE_API_KEY_1"),
+    id='gemini-2.0-flash',
+    api_key=os.getenv("GOOGLE_API_KEY"),
     vertexai=False
 )
 

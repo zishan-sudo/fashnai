@@ -28,8 +28,8 @@ load_dotenv()
 
 # Use Gemini API for virtual try-on (supports vision)
 llm = Gemini(
-    id='gemini-2.5-flash',
-    api_key=os.getenv("GOOGLE_API_KEY_1"),
+    id='gemini-3-flash-preview',
+    api_key=os.getenv("GOOGLE_API_KEY"),
     vertexai=False
 )
 
@@ -70,7 +70,7 @@ def generate_tryon_image(
         Base64 encoded generated image, or None if generation fails
     """
     try:
-        client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY_1"))
+        client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 
         # Open the user's image
         user_image = PILImage.open(io.BytesIO(user_image_bytes))

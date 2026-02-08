@@ -5,7 +5,7 @@
 **Duration:** 24-48 hours
 **Scope:** MVP with AI agents for web scraping
 
-> **Update (February 2026):** This is the original PRD. The project has since been rebranded as **FashnAI** and enhanced with a **Virtual Try-On agent** that provides AI-powered fit analysis, size recommendations, and styling suggestions using Gemini 2.5 Flash Image. See [ARCHITECTURE.md](ARCHITECTURE.md) for current system design.
+> **Update (February 2026):** This is the original PRD. The project has since been rebranded as **FashnAI** and enhanced with a **Virtual Try-On agent** that provides AI-powered fit analysis, size recommendations, and styling suggestions using Gemini 3.0 Flash Image. See [ARCHITECTURE.md](ARCHITECTURE.md) for current system design.
 
 ---
 
@@ -64,7 +64,7 @@ Users waste time visiting 6 retailers to compare prices and read reviews.
          ↓
 ┌─────────────────────────────┐
 │  Agno AI Agents             │
-│  (Gemini 2.5 Flash)         │
+│  (Gemini 3.0 Flash)         │
 │                             │
 │  ├─ PriceAgent              │
 │  │   └─ Fashion retailers   │
@@ -106,7 +106,7 @@ Users waste time visiting 6 retailers to compare prices and read reviews.
 | **Frontend** | Next.js 14 + TypeScript + React 18 + Tailwind CSS | Type-safe UI, SEO, modern design |
 | **Backend** | Python 3.13 + FastAPI | Fast async API, auto docs |
 | **AI Framework** | Agno 2.4+ | Multi-agent orchestration |
-| **LLM Model** | Google Gemini 2.5 Flash | Fast, intelligent parsing |
+| **LLM Model** | Google Gemini 3.0 Flash | Fast, intelligent parsing |
 | **Web Search** | SerperTools (Serper API) | Real-time search results |
 | **Web Scraping** | Crawl4aiTools (Playwright) | JavaScript-enabled scraping |
 | **Database** | SQLite (via Agno) | Session/agent state storage |

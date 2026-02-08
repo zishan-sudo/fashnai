@@ -4,7 +4,7 @@
 **Last Updated:** February 2026
 **Status:** Implemented & Tested
 
-> **Update (February 2026):** Added **Virtual Try-On Agent** with AI-powered image generation using Gemini 2.5 Flash Image. The agent provides personalized fit analysis, size recommendations, and styling suggestions based on user characteristics and product specifications. New endpoint: `POST /api/virtual-tryon`. See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed implementation.
+> **Update (February 2026):** Added **Virtual Try-On Agent** with AI-powered image generation using Gemini 3.0 Flash Image. The agent provides personalized fit analysis, size recommendations, and styling suggestions based on user characteristics and product specifications. New endpoint: `POST /api/virtual-tryon`. See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed implementation.
 
 ---
 
@@ -19,7 +19,7 @@ User Input (Product URL)
     ↓ POST /api/search
 [FastAPI Backend - Python]
     ↓ Parallel Execution
-[Agno AI Agents - Gemini 2.5 Flash]
+[Agno AI Agents - Gemini 3.0 Flash]
     ├─ PriceAgent (Fashion price comparison)
     ├─ ReviewAnalyzerAgent (Sentiment + pros/cons)
     └─ ProductSpecsAgent (Materials + sizes)
@@ -40,7 +40,7 @@ User Input (Product URL)
 - **Runtime:** Python 3.13
 - **Framework:** FastAPI 0.115+
 - **AI Framework:** Agno 2.4+
-- **LLM Model:** Google Gemini 2.5 Flash
+- **LLM Model:** Google Gemini 3.0 Flash
 - **Web Search:** SerperTools (Serper API)
 - **Web Scraping:** Crawl4aiTools (Playwright + Chromium)
 - **Database:** SQLite (via Agno for session management)
