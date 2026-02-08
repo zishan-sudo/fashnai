@@ -19,7 +19,7 @@ COPY requirements.txt ./
 RUN uv pip install --system -r requirements.txt
 
 # Install Playwright for web scraping
-RUN uv pip install playwright
+RUN uv pip install --system playwright
 RUN playwright install --with-deps
 
 # Copy application code
