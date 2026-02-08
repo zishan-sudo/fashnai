@@ -21,9 +21,3 @@ services:
         sync: false
       - key: SERPER_API_KEY
         sync: false
-      - key: DB_HOST
-      - key: DB_PORT
-        value: 5432
-      - key: DB_USER
-      - key: DB_PASS
-      - key: DB_DATABASE
