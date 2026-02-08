@@ -15,9 +15,9 @@ export default function Home() {
 
     setIsLoading(true);
     
-    // Encode the URL and navigate to product details
+    // Encode the URL and navigate to product details with query parameter
     const encodedUrl = encodeURIComponent(productUrl);
-    router.push(`/product/${encodedUrl}`);
+    router.push(`/product?url=${encodedUrl}`);
   };
 
   return (
