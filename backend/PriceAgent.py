@@ -10,7 +10,6 @@ from agno.tools.serper import SerperTools
 from agno.tools.crawl4ai import Crawl4aiTools
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
-from database import db
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -29,10 +28,12 @@ llm = Gemini(
     vertexai=False
 )
 
+db = SqliteDb()  # SQLite instance created directly
+
 agent = Agent(
     model=llm,
     tools=[SerperTools(), Crawl4aiTools()],
-    db=db,  # SQLite instance from database.py
+    db=db,  # SQLite instance
     enable_user_memories=True,
     show_tool_calls=True,
     markdown=True
