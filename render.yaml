@@ -17,3 +17,13 @@ services:
         value: 8000
       - key: FRONTEND_URL
         value: https://magenta-klepon-578cf8.netlify.app
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: SERPER_API_KEY
+        sync: false
+      - key: DB_HOST
+      - key: DB_PORT
+        value: 5432
+      - key: DB_USER
+      - key: DB_PASS
+      - key: DB_DATABASE

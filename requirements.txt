@@ -19,3 +19,5 @@ pillow>=11.0.0
 python-multipart>=0.0.20
 scikit-learn>=1.6.1
 sqlalchemy>=2.0.40
+psycopg2-binary>=2.9.9
+asyncpg>=0.29.0

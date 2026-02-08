@@ -11,6 +11,7 @@ from PriceAgent import compare_prices, PriceComparisonResult
 from ReviewAnalyzerAgent import analyze_reviews, ReviewAnalysis
 from ProductSpecsAgent import extract_specifications, ProductSpecification
 from VirtualTryOnAgent import virtual_tryon, VirtualTryOnResult
+from database import test_db_connection
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,10 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("FashnAI API starting with paid Gemini API key")
     logger.info("Rate limit capacity: 1000+ requests/minute (paid tier)")
+    
+    # Test database connection
+    test_db_connection()
+    
     yield
     # Shutdown
     logger.info("FashnAI API shutting down")
