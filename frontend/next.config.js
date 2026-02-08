@@ -8,7 +8,7 @@ const nextConfig = {
     domains: ['localhost'],
   },
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://fashnai-api.onrender.com'
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production'
