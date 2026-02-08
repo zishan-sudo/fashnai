@@ -5,6 +5,7 @@
 
 # Python
 __pycache__/
+*__pycache__*
 *.py[cod]
 *$py.class
 *.so
@@ -29,6 +30,16 @@ MANIFEST
 venv/
 ENV/
 env/
+*.pyo
+*.pyd
+pip-log.txt
+pip-delete-this-directory.txt
+.mypy_cache/
+.ruff_cache/
+.pytype/
+
+# uv / pip
+uv.lock
 
 # IDEs
 .vscode/
@@ -37,26 +48,40 @@ env/
 *.swo
 *~
 .DS_Store
+.project
+.classpath
+*.sublime-workspace
+*.sublime-project
 
 # Logs
 *.log
 logs/
+*_log.txt
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
 
 # Testing
 .pytest_cache/
 .coverage
 htmlcov/
 .tox/
+.nox/
 
-# Next.js
+# Next.js / Node
 frontend/.next/
 frontend/out/
 frontend/node_modules/
 frontend/.env
 frontend/.env.local
 frontend/.env.*.local
+node_modules/
+package-lock.json
 
-# Misc
+# Temp / generated
+tmp/
 *.bak
 *.tmp
 .cache/
