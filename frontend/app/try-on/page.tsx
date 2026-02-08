@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Upload, Sparkles, User, Ruler, UserCircle, Camera, X, Image as ImageIcon } from 'lucide-react';
 import axios from 'axios';
@@ -32,7 +32,7 @@ interface ProductSpecification {
   [key: string]: any;
 }
 
-export default function VirtualTryOn() {
+function VirtualTryOnContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const productUrl = searchParams.get('url');
@@ -437,5 +437,20 @@ export default function VirtualTryOn() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function VirtualTryOn() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading Virtual Try-On...</p>
+        </div>
+      </div>
+    }>
+      <VirtualTryOnContent />
+    </Suspense>
   );
 }
