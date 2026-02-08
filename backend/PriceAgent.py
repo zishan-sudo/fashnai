@@ -21,11 +21,22 @@ logger.addHandler(handler)
 
 load_dotenv()
 
-# Use paid Gemini API key for all agents
+# Use paid Gemini API key for all agents with SQLite database
 llm = Gemini(
     id='gemini-2.0-flash',
     api_key=os.getenv("GOOGLE_API_KEY"),
     vertexai=False
+)
+
+db = SqliteDb()  # SQLite instance created directly
+
+agent = Agent(
+    model=llm,
+    tools=[SerperTools(), Crawl4aiTools()],
+    db=db,  # SQLite instance
+    enable_user_memories=True,
+    show_tool_calls=True,
+    markdown=True
 )
 
 

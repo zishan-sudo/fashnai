@@ -19,10 +19,12 @@ COPY requirements.txt ./
 RUN uv pip install -r requirements.txt
 
 # Copy application code
-COPY . .
+COPY ./backend ./backend/
+COPY .env ./
 
 # Expose port
 EXPOSE 8000
 
-# Run the application
-CMD ["uvicorn", "backend.api:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run application from backend directory
+WORKDIR /app/backend
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]

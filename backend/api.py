@@ -19,6 +19,8 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("FashnAI API starting with paid Gemini API key")
     logger.info("Rate limit capacity: 1000+ requests/minute (paid tier)")
+    logger.info("Using SQLite database (automatic, no configuration needed)")
+    
     yield
     # Shutdown
     logger.info("FashnAI API shutting down")
@@ -35,7 +37,7 @@ frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001", frontend_url, "*"],
+    allow_origins=["http://localhost:3000", "http://localhost:3001", frontend_url],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
