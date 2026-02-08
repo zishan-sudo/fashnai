@@ -5,11 +5,11 @@ from textwrap import dedent
 from typing import List
 from agno.agent import Agent, RunOutput
 from agno.models.google import Gemini
-from agno.db.sqlite import SqliteDb
 from agno.tools.serper import SerperTools
 from agno.tools.crawl4ai import Crawl4aiTools
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
+from database import db
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -21,11 +21,20 @@ logger.addHandler(handler)
 
 load_dotenv()
 
-# Use paid Gemini API key for all agents
+# Use paid Gemini API key for all agents with Agno database
 llm = Gemini(
     id='gemini-2.0-flash',
     api_key=os.getenv("GOOGLE_API_KEY"),
     vertexai=False
+)
+
+agent = Agent(
+    model=llm,
+    tools=[SerperTools(), Crawl4aiTools()],
+    db=db,
+    enable_user_memories=True,
+    show_tool_calls=True,
+    markdown=True
 )
 
 
