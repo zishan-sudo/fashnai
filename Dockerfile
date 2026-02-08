@@ -20,7 +20,6 @@ RUN uv pip install -r requirements.txt
 
 # Copy application code
 COPY ./backend ./backend/
-COPY .env ./
 
 # Expose port
 EXPOSE 8000
