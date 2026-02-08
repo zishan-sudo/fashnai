@@ -54,7 +54,7 @@ def product_specs_agent() -> Agent:
         name="Fashion Product Specifications Agent",
         model=llm,
         tools=[
-            SerperTools(),
+            SerperTools(api_key=os.getenv("SERPER_API_KEY")),
             Crawl4aiTools(max_length=15000),
         ],
         tool_call_limit=15,

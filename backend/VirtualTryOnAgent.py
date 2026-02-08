@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 from google import genai
 from google.genai import types
 from PIL import Image as PILImage
+from product_image_extractor import extract_product_images
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -53,10 +54,74 @@ class VirtualTryOnResult(BaseModel):
         default=None, description="Base64 encoded generated image of the user wearing the outfit")
 
 
+def analyze_user_photo(user_image_bytes: bytes) -> str:
+    """
+    Step 1: Analyze user's photo to understand current clothing, pose, and lighting.
+    
+    Args:
+        user_image_bytes: The user's photo as bytes
+        
+    Returns:
+        Detailed analysis of user's current appearance
+    """
+    try:
+        client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY_1"))
+        user_image = PILImage.open(io.BytesIO(user_image_bytes))
+        
+        analysis_prompt = """Analyze this person's photo and provide detailed information about:
+
+CURRENT CLOTHING ANALYSIS:
+- Top: Describe the current top/shirt (type, color, pattern, fit, sleeves, neckline)
+- Bottom: Describe pants/bottoms (type, color, fit, length)
+- Shoes: Describe footwear (type, color, style)
+- Any accessories or outerwear visible
+
+BODY POSITIONING & POSE:
+- Arm positioning and pose
+- Body angle and stance
+- How current clothing fits on their body
+- Natural body proportions visible
+
+LIGHTING & PHOTO CONDITIONS:
+- Lighting direction and intensity
+- Shadow patterns on clothing
+- Background type and color
+- Overall photo style (studio, casual, etc.)
+
+FABRIC & TEXTURE DETAILS:
+- How current fabrics drape and behave
+- Visible wrinkles or fabric characteristics
+- Material appearance (matte, shiny, textured)
+
+Provide specific, detailed observations that will help with accurate clothing replacement."""
+
+        logger.info("Analyzing user photo with Gemini...")
+        
+        response = client.models.generate_content(
+            model="gemini-2.5-flash-image",
+            contents=[analysis_prompt, user_image],
+            config=types.GenerateContentConfig(
+                response_modalities=['TEXT'],
+                temperature=0.3,
+                max_output_tokens=2048
+            )
+        )
+        
+        analysis = response.candidates[0].content.parts[0].text
+        logger.info("Successfully analyzed user photo")
+        return analysis
+        
+    except Exception as e:
+        logger.error(f"Failed to analyze user photo: {e}")
+        return "Unable to analyze user photo - proceeding with basic replacement"
+
+
 def generate_tryon_image(
     user_image_bytes: bytes,
     product_specs: Optional[dict] = None,
-    product_name: str = "the outfit"
+    product_name: str = "the outfit",
+    product_url: Optional[str] = None,
+    user_analysis: Optional[str] = None
 ) -> Optional[str]:
     """
     Generate a virtual try-on image using Gemini's image generation.
@@ -75,58 +140,201 @@ def generate_tryon_image(
         # Open the user's image
         user_image = PILImage.open(io.BytesIO(user_image_bytes))
 
-        # Extract product name from URL if it contains product details
-        if "Shein" in product_name or "shein" in product_name:
-            # Extract product details from Shein URL
-            if "All-White-Halterneck" in product_name:
-                product_description = """
-Product: All-White Halterneck Street Sexy Backless Dress
-Brand: SHEIN
-Color: White
-Style: Halterneck, backless, A-line hem with frilled details
-Material: Lightweight fabric suitable for vacation/street wear
-Features: Halter neckline, open back design, asymmetrical frilled hem, slim fit
+        # Create detailed product description from specs or product name
+        if product_specs:
+            # Enhanced pattern description for accurate replication
+            color = product_specs.get('color', 'Unknown')
+            product_name = product_specs.get('product_name', product_name)
+            features_list = product_specs.get('features', [])
+            features_text = '\n  * '.join(features_list) if features_list else 'No specific features listed'
+            
+            # Check for tie-dye in product name, color, or features
+            all_text = f"{product_name} {color} {features_text}".lower()
+            pattern_description = ""
+            
+            if ('tie' in all_text and 'dye' in all_text) or 'tie-dye' in all_text:
+                pattern_description = f"""
+CRITICAL PATTERN SPECIFICATIONS:
+- Pattern Type: Authentic tie-dye (organic, irregular swirl patterns)
+- Pattern Style: Natural circular/spiral formations created by fabric bunching and dyeing
+- Color Distribution: Irregular organic swirls and bleeds, NOT geometric shapes or stripes
+- Pattern Density: Varied throughout garment with natural fade transitions
+- Dye Technique: Traditional tie-dye method creating concentric circles and organic flows
+- AVOID: Geometric patterns, regular stripes, uniform designs, digital prints
+- CRITICAL: This is NOT a striped pattern - it must show organic, hand-dyed swirl effects
                 """
-            else:
-                product_description = f"Product: {product_name} (SHEIN brand dress)"
-        elif product_specs:
+            elif 'stripe' in color.lower() or 'striped' in features_text.lower():
+                pattern_description = f"""
+CRITICAL PATTERN SPECIFICATIONS:
+- Pattern Type: Stripes (regular linear patterns)
+- Stripe Direction: As specified in product details
+- Stripe Width: Consistent width as described
+- Color Alternation: Regular alternating pattern
+                """
+            elif 'floral' in color.lower() or 'flower' in features_text.lower():
+                pattern_description = f"""
+CRITICAL PATTERN SPECIFICATIONS:
+- Pattern Type: Floral print (flower and botanical designs)
+- Pattern Distribution: As specified in product details
+- Design Elements: Natural flower shapes and botanical motifs
+                """
+            
             product_description = f"""
-Product: {product_specs.get('product_name', product_name)}
-Brand: {product_specs.get('brand', 'Unknown')}
-Color: {product_specs.get('color', 'Unknown')}
-Material: {product_specs.get('material', 'Unknown')}
-Features: {', '.join(product_specs.get('features', []))}
+EXACT CLOTHING ITEM TO REPLICATE:
+- Type: {product_specs.get('category', 'Clothing item')}
+- Brand: {product_specs.get('brand', 'Unknown')}
+- Product Name: {product_specs.get('product_name', product_name)}
+- Color: {color}
+- Material: {product_specs.get('material', 'Unknown')}
+- Fit Type: {product_specs.get('fit_type', 'Standard fit')}
+- Available Sizes: {', '.join(product_specs.get('sizes_available', [])) or 'Various sizes'}
+
+VISUAL SPECIFICATIONS:
+- Primary Color: {color} (exact shade and tone)
+- Material Properties: {product_specs.get('material', 'Unknown')} (affects drape, texture, and sheen)
+- Fit Characteristics: {product_specs.get('fit_type', 'Standard')} fit behavior on body
+- Key Design Features:
+  * {features_text}
+{pattern_description}
+
+CONSTRUCTION DETAILS:
+- Care Instructions: {product_specs.get('care_instructions', 'Standard care')}
+- Country of Origin: {product_specs.get('country_of_origin', 'Not specified')}
+- Style Number: {product_specs.get('style_number', 'Not available')}
             """
         else:
-            product_description = f"Product: {product_name}"
+            # Fallback to basic product name description
+            product_description = f"""
+CLOTHING ITEM TO REPLICATE:
+- Product: {product_name}
+- Note: Limited product details available - generate based on product name and visible characteristics
+- Instruction: Analyze the product name to determine type, style, and likely characteristics
+            """
 
-        prompt = f"""Generate a realistic image of this person wearing the following clothing item:
+        # Determine what clothing item to replace based on product category
+        product_category = product_specs.get('category', 'clothing item').lower() if product_specs else 'clothing item'
+        
+        # Dynamic replacement instructions based on product type
+        if 'top' in product_category or 'shirt' in product_category or 'blouse' in product_category or 'sweater' in product_category:
+            current_item = "the current top/shirt the person is wearing"
+            positioning = "The new garment should sit exactly where the current top is positioned"
+        elif 'dress' in product_category:
+            current_item = "any existing dress or top+bottom combination"
+            positioning = "The dress should cover the torso and extend to the specified length"
+        elif 'pant' in product_category or 'jean' in product_category or 'trouser' in product_category:
+            current_item = "the current pants/bottoms the person is wearing"
+            positioning = "The new bottoms should sit at the waist and extend to the specified length"
+        elif 'shoe' in product_category or 'sneaker' in product_category or 'boot' in product_category:
+            current_item = "the current footwear the person is wearing"
+            positioning = "The new footwear should be positioned exactly where the current shoes are"
+        elif 'jacket' in product_category or 'coat' in product_category or 'blazer' in product_category:
+            current_item = "any existing outerwear"
+            positioning = "The new outerwear should layer appropriately over existing clothing"
+        else:
+            current_item = "the relevant existing clothing item"
+            positioning = "The new garment should be positioned appropriately on the body"
 
+        # Enhanced prompt with user analysis context
+        context_section = ""
+        if user_analysis:
+            context_section = f"""
+USER PHOTO ANALYSIS CONTEXT:
+{user_analysis}
+
+Based on the above analysis, ensure the new garment:
+- Matches the existing lighting conditions and shadow patterns
+- Follows the same fabric draping behavior as observed
+- Fits naturally with the person's pose and body positioning
+- Replaces only the specified clothing item while preserving everything else
+"""
+
+        prompt = f"""PRECISE CLOTHING REPLACEMENT INSTRUCTION: Replace {current_item} with the exact specified garment. DO NOT interpret or modify - paint exactly as described.
+{context_section}
+CLOTHING DIAGRAM TO PAINT:
 {product_description}
 
-CRITICAL INSTRUCTIONS:
-- Keep the person's face, facial features, and expression EXACTLY identical
-- Maintain the exact same hair color, style, and length
-- Preserve the same body shape, proportions, and posture
-- Keep the identical background and lighting conditions
-- Replace or add ONLY the specified clothing item
-- Make the garment fit naturally and realistically on their body
-- Ensure the clothing drapes and behaves according to its material properties
-- Match the lighting and shadows on the new clothing to the original photo
-- Create a photo-realistic result that looks natural and believable
+EXACT REPLACEMENT TASK:
+- REMOVE: {current_item.capitalize()}
+- REPLACE WITH: The exact garment as specified in the clothing diagram above
+- POSITIONING: {positioning}
+- FIT: Match the fit type specified in the product details
+
+STRICT VISUAL REPLICATION REQUIREMENTS:
+- Color accuracy: Use the exact colors specified in the product description - NO variations or interpretations
+- Pattern/Design: Replicate patterns EXACTLY as described - if tie-dye is mentioned, use organic swirl patterns, NOT stripes or geometric shapes
+- Pattern placement: Distribute patterns naturally across the garment as they would appear on the actual product
+- Material texture: Show the specified material properties with realistic surface appearance
+- Construction details: Include any mentioned seams, stitching, hardware, or decorative elements in exact positions
+- Fit behavior: Follow the specified fit type precisely - fitted means form-fitting, loose means relaxed
+- Length/Coverage: Match the specified garment length and coverage area exactly
+- Scale/Proportion: Ensure all design elements are proportionally correct to the garment size
+
+PHOTO-REALISTIC CONSTRAINTS:
+- Maintain exact lighting and shadows from original photo
+- Preserve natural fabric draping and wrinkle behavior appropriate to the material
+- Keep identical body positioning and natural pose
+- Match the studio lighting on the new garment
+- Ensure patterns/textures follow the body's natural contours
+- Show realistic fabric interaction with body movement
+
+PRESERVE COMPLETELY UNCHANGED:
+- Face, hair, expression, skin tone - IDENTICAL
+- Body shape, posture, natural positioning - IDENTICAL  
+- Any clothing items NOT being replaced - IDENTICAL
+- Background, lighting setup, camera angle - IDENTICAL
+- Overall photo composition and style - IDENTICAL
+
+CRITICAL INSTRUCTION: Paint ONLY the specified garment from the clothing diagram. Do not add creative interpretations or modifications. The result must look like a professional product photo of this person wearing the exact item described, maintaining complete photographic realism.
 """
+
+        # Try to extract product images if URL is provided
+        product_images = []
+        if product_url:
+            try:
+                logger.info(f"Attempting to extract product images from: {product_url}")
+                extracted_images = extract_product_images(product_url, max_images=2)
+                if extracted_images:
+                    product_images = extracted_images
+                    logger.info(f"Successfully extracted {len(product_images)} product images")
+                else:
+                    logger.info("No product images extracted, proceeding with text-only approach")
+            except Exception as e:
+                logger.warning(f"Product image extraction failed: {e}. Proceeding with text-only approach")
+
+        # Build contents for Gemini - always include prompt and user image
+        contents = [prompt, user_image]
+        
+        # Add product images if successfully extracted
+        if product_images:
+            contents.extend(product_images)
+            logger.info(f"Using {len(product_images)} product reference images + text description")
+            # Enhance prompt when we have visual reference
+            enhanced_prompt = prompt + "\n\nVISUAL REFERENCE: Use the provided product images as exact reference for colors, patterns, textures, and design details. Replicate the visual appearance shown in the product photos precisely."
+            contents[0] = enhanced_prompt
+        else:
+            logger.info("Using text-only approach for product description")
 
         logger.info(f"Generating try-on image with Gemini...")
 
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=[prompt, user_image],
-            config=types.GenerateContentConfig(
-                response_modalities=['IMAGE'],
-                temperature=0.3,
-                max_output_tokens=8192
+        try:
+            response = client.models.generate_content(
+                model="gemini-2.5-flash-image",
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    response_modalities=['IMAGE'],
+                    temperature=0.1,  # Lower temperature for more consistent clothing replacement
+                    top_p=0.8,       # More focused sampling
+                    max_output_tokens=8192
+                )
             )
-        )
+        except Exception as gemini_error:
+            error_msg = str(gemini_error)
+            if "not available in your country" in error_msg or "FAILED_PRECONDITION" in error_msg:
+                logger.error(f"Gemini image generation not available in this region: {error_msg}")
+                # Return a descriptive error message instead of None
+                return "GEOGRAPHIC_RESTRICTION_ERROR"
+            else:
+                raise gemini_error
 
         # Extract the generated image
         for part in response.candidates[0].content.parts:
@@ -348,13 +556,24 @@ def virtual_tryon(
 
             # Generate try-on image if user provided a photo
             if user_image_bytes:
-                logger.info("Generating virtual try-on image...")
+                logger.info("Starting multi-step virtual try-on process...")
+                
+                # Step 1: Analyze user photo first
+                user_analysis = analyze_user_photo(user_image_bytes)
+                logger.info("User photo analysis completed")
+                
+                # Step 2: Generate try-on image with analysis context
                 generated_image = generate_tryon_image(
                     user_image_bytes=user_image_bytes,
                     product_specs=product_specs,
-                    product_name=result.product_name
+                    product_name=result.product_name,
+                    product_url=product_url,
+                    user_analysis=user_analysis
                 )
-                if generated_image:
+                if generated_image == "GEOGRAPHIC_RESTRICTION_ERROR":
+                    result.warnings.append("Image generation is not available in your region. Virtual try-on description provided instead.")
+                    result.generated_image_description = f"Virtual try-on simulation: You wearing {result.product_name}. The garment would fit according to the analysis above."
+                elif generated_image:
                     result.generated_image_base64 = generated_image
                     # Update the response content with the new result
                     response.content = result

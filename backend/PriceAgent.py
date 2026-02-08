@@ -61,7 +61,7 @@ def price_agent() -> Agent:
         name="Fashion Price Comparison Agent",
         model=llm,
         tools=[
-            SerperTools(),
+            SerperTools(api_key=os.getenv("SERPER_API_KEY")),
             Crawl4aiTools(max_length=12000),
         ],
         tool_call_limit=15,
