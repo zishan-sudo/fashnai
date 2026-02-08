@@ -6,7 +6,7 @@ import { ArrowLeft, Upload, Sparkles, User, Ruler, UserCircle, Camera, X, Image 
 import axios from 'axios';
 import Image from 'next/image';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://fashnai-api.onrender.com';
 
 interface TryOnResult {
   generated_image_description: string;
