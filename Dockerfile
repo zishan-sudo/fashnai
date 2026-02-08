@@ -25,9 +25,9 @@ RUN playwright install --with-deps
 # Copy application code
 COPY ./backend ./backend/
 
-# Expose port
-EXPOSE 8000
+# Expose port (Render uses PORT env var, default to 8000)
+EXPOSE ${PORT:-8000}
 
 # Run application from backend directory
 WORKDIR /app/backend
-CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn api:app --host 0.0.0.0 --port ${PORT:-8000}"]
