@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
+import os
 from contextlib import asynccontextmanager
 import asyncio
 import logging
@@ -10,7 +11,6 @@ from PriceAgent import compare_prices, PriceComparisonResult
 from ReviewAnalyzerAgent import analyze_reviews, ReviewAnalysis
 from ProductSpecsAgent import extract_specifications, ProductSpecification
 from VirtualTryOnAgent import virtual_tryon, VirtualTryOnResult
-from api_key_manager import api_key_manager
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +30,12 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Get frontend URL from environment or use localhost for development
+frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001", "*"],
+    allow_origins=["http://localhost:3000", "http://localhost:3001", frontend_url, "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -94,7 +97,7 @@ def health_check():
     return {
         "status": "healthy", 
         "service": "FashnAI API",
-        "api_keys": api_key_manager.total_keys
+        "model": "gemini-3-flash-preview"
     }
 
 
@@ -106,8 +109,8 @@ async def search_product(request: SearchRequest):
     try:
         logger.info(f"Starting comprehensive analysis for: {request.product_url}")
         
-        # Run agents in PARALLEL - each has its own dedicated API key
-        logger.info("Running all 3 agents in parallel with dedicated API keys...")
+        # Run agents in PARALLEL with single paid API key
+        logger.info("Running all 3 agents in parallel with paid API key...")
         
         # Create tasks for parallel execution
         price_task = asyncio.create_task(asyncio.to_thread(compare_prices, request.product_url))

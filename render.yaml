@@ -1,0 +1,19 @@
+services:
+  # Web Service
+  - type: web
+    name: fashnai-api
+    env: docker
+    repo: https://github.com/zishan-sudo/fashnai.git
+    rootDir: .
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    region: oregon
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: PORT
+        value: 8000
+      - key: FRONTEND_URL
+        value: https://magenta-klepon-578cf8.netlify.app

@@ -2,6 +2,11 @@
 
 AI-powered fashion research and price comparison system using multi-agent architecture. Specialized in apparel and footwear analysis.
 
+## 🌐 Live Demo
+
+- **Frontend**: https://magenta-klepon-578cf8.netlify.app/
+- **Backend API**: https://fashnai-api.onrender.com
+
 ## Features
 
 - **Fashion Price Comparison Agent**: Finds the same fashion product (clothing, shoes, accessories) across multiple fashion e-commerce websites and compares prices
@@ -268,7 +273,7 @@ python -m pytest
 
 The agents use the following APIs:
 
-- **Gemini API**: Used for the AI models (Gemini 2.5 Flash for text analysis, Gemini 2.5 Flash Image for virtual try-on)
+- **Gemini API**: Used for the AI models (Gemini 2.5 Flash for text analysis, Gemini 3 Flash Image for virtual try-on)
 - **Serper API**: Used for web search functionality
 
 Both API keys should be configured in your `.env` file as shown in the setup section.
@@ -291,24 +296,3 @@ rm -rf .venv
 uv sync
 ```
 
-### API Key Issues
-
-- Verify your `.env` file is in the project root
-- Check that API keys are valid and have proper permissions
-- Ensure `python-dotenv` is loading the environment variables
-
-### Dependency Conflicts
-
-```bash
-# Clear cache and reinstall
-uv cache clean
-uv sync --reinstall
-```
-
-## License
-
-[Add your license here]
-
-## Contributing
-
-[Add contribution guidelines here]

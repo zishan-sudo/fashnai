@@ -152,10 +152,7 @@ The **free tier** of Gemini API has strict limits:
 
 **Solutions**:
 1. **Upgrade to paid tier** (recommended for production) - 1000 req/min, ~$0.02 per search
-2. **Use multiple API keys** - Rotate between 3 keys for 15 req/min total
-3. **Wait between searches** - Allow 60+ seconds between tests
-
-See `RATE_LIMITS.md` for detailed solutions.
+2. **Wait between searches** - Allow 60+ seconds between tests
 
 ---
 

@@ -78,7 +78,7 @@ FashnAI is a full-stack application that uses AI agents to compare fashion produ
 │         │                 │                │             │       │
 │         └─────────────────┴────────────────┴─────────────┘       │
 │                                 │                                │
-│           Gemini 2.5 Flash API + Gemini 2.5 Flash Image         │
+│           Gemini 3.0 Flash API + Gemini 3.0 Flash Image         │
 │                          (Google AI)                             │
 └──────────────────────┬──────────────────────────────────────┘
                        │
@@ -297,7 +297,7 @@ backend/
 1. Analyze product details (with optional pre-fetched specs to avoid re-crawling)
 2. Process user characteristics (size, height, body type)
 3. Analyze user photo if provided (using Gemini Vision)
-4. Generate realistic try-on image using Gemini 2.5 Flash Image
+4. Generate realistic try-on image using Gemini 3.0 Flash Image
 5. Provide fit analysis based on body type and garment specifications
 6. Recommend optimal size
 7. Generate 3-5 personalized styling suggestions
@@ -318,7 +318,7 @@ backend/
 ```
 
 **Key Features:**
-- **Image Generation:** Uses Gemini 2.5 Flash Image to create realistic try-on photos
+- **Image Generation:** Uses Gemini 3.0 Flash Image to create realistic try-on photos
 - **Cached Product Specs:** Accepts pre-fetched product data to avoid redundant crawling
 - **User Photo Analysis:** Processes user photos to determine body shape and proportions
 - **Personalized Recommendations:** Tailored advice based on user characteristics
@@ -349,8 +349,8 @@ backend/
 #### 4.3 Google Gemini API
 
 - **Models:**
-  - Gemini 2.5 Flash (text analysis & extraction)
-  - Gemini 2.5 Flash Image (virtual try-on image generation)
+  - Gemini 3.0 Flash (text analysis & extraction)
+  - Gemini 3.0 Flash Image (virtual try-on image generation)
 - **Purpose:** Intelligent data extraction, analysis, and image generation
 - **Features:**
   - Fast response times
@@ -413,7 +413,7 @@ backend/
 5. VirtualTryOnAgent:
    ├─ Analyzes product details (or uses cached specs)
    ├─ Processes user photo with Gemini Vision (if provided)
-   ├─ Generates try-on image with Gemini 2.5 Flash Image
+   ├─ Generates try-on image with Gemini 3.0 Flash Image
    ├─ Analyzes fit based on body type & garment specs
    ├─ Recommends size
    ├─ Generates styling suggestions
