@@ -16,7 +16,7 @@ COPY pyproject.toml ./
 COPY requirements.txt ./
 
 # Install dependencies
-RUN uv pip install -r requirements.txt
+RUN uv pip install --system -r requirements.txt
 
 # Copy application code
 COPY ./backend ./backend/

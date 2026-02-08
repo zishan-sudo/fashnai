@@ -35,7 +35,6 @@ agent = Agent(
     tools=[SerperTools(), Crawl4aiTools()],
     db=db,  # SQLite instance
     enable_user_memories=True,
-    show_tool_calls=True,
     markdown=True
 )
 
