@@ -101,8 +101,8 @@ function ProductDetailsContent() {
         const prices = pricesResponse.data;
         console.log('Prices received');
 
-        // Wait 20 seconds to respect Gemini API rate limits (matches backend delay)
-        await new Promise(resolve => setTimeout(resolve, 20000));
+        // Wait 5 seconds between API calls to respect rate limits
+        await new Promise(resolve => setTimeout(resolve, 5000));
 
         // 2. Review Agent
         setCurrentStep('reviews');
@@ -113,7 +113,8 @@ function ProductDetailsContent() {
         const reviews = reviewsResponse.data;
         console.log('Reviews received');
 
-        await new Promise(resolve => setTimeout(resolve, 20000));
+        // Wait 5 seconds between API calls to respect rate limits
+        await new Promise(resolve => setTimeout(resolve, 5000));
 
         // 3. Specs Agent
         setCurrentStep('specs');
