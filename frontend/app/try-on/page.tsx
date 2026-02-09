@@ -35,7 +35,7 @@ interface ProductSpecification {
 export default function VirtualTryOn() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const productUrl = searchParams.get('url');
+  const productUrl = searchParams?.get('url');
 
   const [userSize, setUserSize] = useState('');
   const [userHeight, setUserHeight] = useState('');
