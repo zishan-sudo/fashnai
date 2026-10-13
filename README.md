@@ -48,21 +48,13 @@ cd fashnai
 Create a `.env` file in the project root with the following variables:
 
 ```env
-GOOGLE_API_KEY=your-google-api-key
-SERPER_API_KEY=your-serper-api-key
-```
-
-**Note:** For production with multiple API keys to avoid rate limits, you can use:
-```env
-GOOGLE_API_KEY_1=your-first-google-api-key
-GOOGLE_API_KEY_2=your-second-google-api-key
-GOOGLE_API_KEY_3=your-third-google-api-key
-SERPER_API_KEY=your-serper-api-key
+NEBIUS_API_KEY=your-nebius-api-key
+TAVILY_API_KEY=your-tavily-api-key
 ```
 
 **Required API Keys:**
-- **Gemini API**: Get your API key from [Google AI Studio](https://aistudio.google.com/app/apikey)
-- **Serper API**: Get your API key from [serper.dev](https://serper.dev)
+- **Nebius API**: Get your API key from [Nebius AI Studio](https://studio.nebius.ai/)
+- **Tavily API**: Get your API key from [tavily.com](https://tavily.com)
 
 ### 4. Install Dependencies
 
@@ -279,8 +271,8 @@ The agents use the following APIs:
 Both API keys should be configured in your `.env` file as shown in the setup section.
 
 **API Key Usage:**
-- `GOOGLE_API_KEY` (or `GOOGLE_API_KEY_1`): Used by all agents
-- For better rate limit handling, you can configure multiple keys (KEY_1, KEY_2, KEY_3)
+- `NEBIUS_API_KEY`: Used by all agents (Nebius AI Studio)
+- `TAVILY_API_KEY`: Used for web search and extraction (Tavily)
 
 ## Troubleshooting
 

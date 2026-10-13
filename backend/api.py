@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    logger.info("FashnAI API starting with paid Gemini API key")
+    logger.info("FashnAI API starting with Nebius models")
     logger.info("Rate limit capacity: 1000+ requests/minute (paid tier)")
     logger.info("Using SQLite database (automatic, no configuration needed)")
     
@@ -99,7 +99,7 @@ def health_check():
     return {
         "status": "healthy", 
         "service": "FashnAI API",
-        "model": "gemini-3-flash-preview"
+        "model": "openai/gpt-oss-120b (Nebius)"
     }
 
 
