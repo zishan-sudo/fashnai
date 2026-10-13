@@ -11,6 +11,7 @@ from PriceAgent import compare_prices, PriceComparisonResult
 from ReviewAnalyzerAgent import analyze_reviews, ReviewAnalysis
 from ProductSpecsAgent import extract_specifications, ProductSpecification
 from VirtualTryOnAgent import virtual_tryon, VirtualTryOnResult
+from x402_config import build_routes_and_server, price_for
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,18 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# x402: agents pay USDC per request (402 -> pay -> retry).
+# Added BEFORE CORSMiddleware so CORS stays outermost and 402 responses
+# still carry CORS headers for browser clients.
+try:
+    from x402.http.middleware.fastapi import PaymentMiddlewareASGI
+    _routes, _server = build_routes_and_server()
+    app.add_middleware(PaymentMiddlewareASGI, routes=_routes, server=_server,
+                       paywall_config={"appName": "FashnAI"})
+    logger.info("x402 payments enabled (USDC via facilitator)")
+except RuntimeError as e:
+    logger.warning(f"x402 payments disabled: {e}")
 
 # Get frontend URL from environment or use localhost for development
 frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
@@ -80,9 +93,15 @@ def root():
     return {
         "message": "FashnAI Fashion Comparison API",
         "version": "1.0.0",
-        "api_tier": "Paid",
-        "rate_limit": "1000+ requests/minute",
+        "payments": "x402 (USDC) - pay per request",
         "execution": "Parallel (3 agents)",
+        "prices": {
+            "/api/search": price_for("/api/search"),
+            "/api/prices": price_for("/api/prices"),
+            "/api/reviews": price_for("/api/reviews"),
+            "/api/specs": price_for("/api/specs"),
+            "/api/virtual-tryon": price_for("/api/virtual-tryon"),
+        },
         "endpoints": {
             "health": "/health",
             "search": "/api/search (POST)",
@@ -97,9 +116,10 @@ def root():
 @app.get("/health")
 def health_check():
     return {
-        "status": "healthy", 
+        "status": "healthy",
         "service": "FashnAI API",
-        "model": "openai/gpt-oss-120b (Nebius)"
+        "model": "openai/gpt-oss-120b (Nebius)",
+        "payments": "x402 USDC"
     }
 
 

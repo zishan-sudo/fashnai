@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Upload, Sparkles, User, Ruler, UserCircle, Camera, X, Image as ImageIcon } from 'lucide-react';
 import axios from 'axios';
 import Image from 'next/image';
+import { isPaymentRequired, PaymentRequiredPanel } from '../x402-payment';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://fashnai-api.onrender.com';
 
@@ -46,6 +47,7 @@ function VirtualTryOnContent() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<TryOnResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [payment, setPayment] = useState<ReturnType<typeof isPaymentRequired>>(null);
   const [cachedSpecs, setCachedSpecs] = useState<ProductSpecification | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -143,12 +145,20 @@ function VirtualTryOnContent() {
 
       setResult(response.data);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to perform virtual try-on');
+      const paymentInfo = isPaymentRequired(err);
+      if (!paymentInfo) {
+        setError(err.response?.data?.detail || 'Failed to perform virtual try-on');
+      }
+      setPayment(paymentInfo);
       console.error('Virtual try-on error:', err);
     } finally {
       setLoading(false);
     }
   };
+
+  if (payment) {
+    return <PaymentRequiredPanel payment={payment} />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">

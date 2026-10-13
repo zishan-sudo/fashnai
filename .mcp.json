@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "fashnai": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "backend/x402_mcp_server.py"
+      ],
+      "env": {}
+    }
+  }
+}

@@ -81,9 +81,18 @@ export default function Home() {
               </button>
             </div>
           </form>
-          <p className="text-sm text-gray-500 mt-4 text-center">
-            Try: https://en.zalando.de/bershka-baby-gifts-black-bej22s0jx-q11.html
-          </p>
+          <button
+            type="button"
+            onClick={() => setProductUrl('https://www.thenorthface.com/de-de/p/herren-211701/limbara-isolierjacke-fur-herren-NF0A89EG?color=JK3&size=M')}
+            className="block mx-auto mt-5 px-5 py-3 bg-white/80 border border-gray-200 rounded-xl text-left hover:border-blue-400 hover:shadow-md transition-all group"
+          >
+            <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 group-hover:text-blue-600">
+              Try an example
+            </span>
+            <span className="block text-sm text-gray-700 font-mono">
+              https://www.thenorthface.com/de-de/p/herren-211701/limbara-isolierjacke-fur-herren-NF0A89EG
+            </span>
+          </button>
         </div>
 
         {/* Features */}

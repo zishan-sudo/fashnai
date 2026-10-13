@@ -7,6 +7,7 @@ beautifulsoup4>=4.12.0
 requests>=2.31.0
 agno>=1.7.5
 tavily-python>=0.8.5
+x402[evm,fastapi]>=2.25.0
 aiofiles>=24.1.0
 aiohttp>=3.11.18
 azure-ai-inference>=1.0.0b9
