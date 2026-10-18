@@ -2,19 +2,14 @@ import logging
 import uuid
 import os
 import base64
-import io
 from textwrap import dedent
 from typing import Optional
 from agno.agent import Agent, RunOutput
-from agno.models.google import Gemini
+from agno.models.nebius import Nebius
 from agno.db.sqlite import SqliteDb
-from agno.tools.crawl4ai import Crawl4aiTools
 from agno.media import Image
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
-from google import genai
-from google.genai import types
-from PIL import Image as PILImage
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -26,11 +21,10 @@ logger.addHandler(handler)
 
 load_dotenv()
 
-# Use Gemini API for virtual try-on (supports vision)
-llm = Gemini(
-    id='gemini-3-flash-preview',
-    api_key=os.getenv("GOOGLE_API_KEY"),
-    vertexai=False
+# Use Nebius vision model for virtual try-on (supports image input)
+llm = Nebius(
+    id='openbmb/MiniCPM-V-4_5',
+    api_key=os.getenv("NEBIUS_API_KEY"),
 )
 
 
@@ -53,87 +47,16 @@ class VirtualTryOnResult(BaseModel):
         default=None, description="Base64 encoded generated image of the user wearing the outfit")
 
 
-def generate_tryon_image(
-    user_image_bytes: bytes,
-    product_specs: Optional[dict] = None,
-    product_name: str = "the outfit"
-) -> Optional[str]:
-    """
-    Generate a virtual try-on image using Gemini's image generation.
 
-    Args:
-        user_image_bytes: The user's photo as bytes
-        product_specs: Product specifications dict
-        product_name: Name of the product
 
-    Returns:
-        Base64 encoded generated image, or None if generation fails
-    """
-    try:
-        client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
-
-        # Open the user's image
-        user_image = PILImage.open(io.BytesIO(user_image_bytes))
-
-        # Build the prompt for image generation
-        if product_specs:
-            product_description = f"""
-            Product: {product_specs.get('product_name', product_name)}
-            Brand: {product_specs.get('brand', 'Unknown')}
-            Color: {product_specs.get('color', 'Unknown')}
-            Material: {product_specs.get('material', 'Unknown')}
-            Category: {product_specs.get('category', 'clothing')}
-            Fit Type: {product_specs.get('fit_type', 'regular')}
-            """
-        else:
-            product_description = f"Product: {product_name}"
-
-        prompt = f"""Generate a realistic image of this person wearing the following clothing item:
-
-{product_description}
-
-Instructions:
-- Keep the person's face, body shape, and proportions exactly the same
-- Replace or add the clothing item described above
-- Make it look natural and realistic as if they are actually wearing the outfit
-- Maintain the same background and lighting style
-- The clothing should fit naturally on their body
-"""
-
-        logger.info(f"Generating try-on image with Gemini...")
-
-        response = client.models.generate_content(
-            model="gemini-2.5-flash-image",
-            contents=[prompt, user_image],
-            config=types.GenerateContentConfig(
-                response_modalities=['IMAGE', 'TEXT']
-            )
-        )
-
-        # Extract the generated image
-        for part in response.candidates[0].content.parts:
-            if part.inline_data is not None:
-                # Convert to base64
-                image_base64 = base64.b64encode(part.inline_data.data).decode('utf-8')
-                logger.info("Successfully generated try-on image")
-                return f"data:image/png;base64,{image_base64}"
-
-        logger.warning("No image generated in response")
-        return None
-
-    except Exception as e:
-        logger.error(f"Failed to generate try-on image: {e}")
-        return None
 
 
 def virtual_tryon_agent() -> Agent:
     agent = Agent(
         name="Virtual Try-On AI Agent",
         model=llm,
-        tools=[
-            Crawl4aiTools(max_length=10000),
-        ],
-        tool_call_limit=10,
+        # No tools: Nebius vision models don't support function calling.
+        # Product specs are fetched upstream and passed in the prompt.
         description=dedent("""\
         You are an advanced AI fashion stylist and virtual try-on specialist.
         Your role is to analyze fashion products and user characteristics to provide
@@ -143,7 +66,7 @@ def virtual_tryon_agent() -> Agent:
         You will receive a product URL and user characteristics. Your task is to:
 
         1. Product Analysis Phase
-            - Crawl the product URL to extract:
+            - Analyze the product information provided in the input:
                 * Product name, brand, and category
                 * Size information and fit type
                 * Material and fabric details
@@ -262,9 +185,20 @@ def virtual_tryon(
         to give highly personalized fit analysis and styling recommendations.
         """)
 
-    # Build product info section - use cached specs if available
+    # Build product info section - fetch specs if not provided.
+    # The vision model can't call tools, so specs must come from the input:
+    # either cached specs from /api/search or the ProductSpecsAgent below.
+    if not product_specs:
+        logger.info("No cached specs - fetching via ProductSpecsAgent")
+        from ProductSpecsAgent import extract_specifications
+        specs_result = extract_specifications(product_url)
+        if not isinstance(specs_result.content, str):
+            try:
+                product_specs = specs_result.content.model_dump()
+            except AttributeError:
+                pass
     if product_specs:
-        logger.info("Using cached product specifications (skipping crawl)")
+        logger.info("Using product specifications")
         product_info = dedent(f"""
         PRODUCT INFORMATION (pre-fetched, no need to crawl):
         - Product Name: {product_specs.get('product_name', 'Unknown')}
@@ -277,11 +211,11 @@ def virtual_tryon(
         - Features: {', '.join(product_specs.get('features', [])) or 'None listed'}
         - Care Instructions: {product_specs.get('care_instructions', 'Not specified')}
 
-        DO NOT crawl the product URL - use the information above for your analysis.
+        Use the information above for your analysis.
         """)
     else:
-        logger.info("No cached specs - agent will crawl the product URL")
-        product_info = f"Product URL: {product_url}\n\nPlease crawl this URL to get product details."
+        logger.warning("Could not fetch product specs - analyzing from URL alone")
+        product_info = f"Product URL: {product_url}\n\nNo product specifications could be fetched. Analyze based on the URL and user characteristics as best you can."
 
     payload = dedent(f"""
         {product_info}
@@ -315,8 +249,11 @@ def virtual_tryon(
                 raw_base64 = base64_data
 
             # Decode and create Image object
+            # 'format' must be passed explicitly: agno's MIME sniffing uses
+            # imghdr, which is gone in Python 3.13, so every image would be
+            # labeled image/jpeg and rejected by Nebius's vision models.
             user_image_bytes = base64.b64decode(raw_base64)
-            images = [Image(content=user_image_bytes, mime_type=mime_type)]
+            images = [Image(content=user_image_bytes, mime_type=mime_type, format=mime_type.split("/")[1])]
             logger.info(f"User image included in analysis (mime_type: {mime_type})")
         except Exception as e:
             logger.warning(f"Failed to decode user image: {e}")
@@ -327,20 +264,9 @@ def virtual_tryon(
         response = agent.run(input=payload, session_id=str(uuid.uuid4()), images=images)
         try:
             result = VirtualTryOnResult.model_validate(response.content)
-
-            # Generate try-on image if user provided a photo
-            if user_image_bytes:
-                logger.info("Generating virtual try-on image...")
-                generated_image = generate_tryon_image(
-                    user_image_bytes=user_image_bytes,
-                    product_specs=product_specs,
-                    product_name=result.product_name
-                )
-                if generated_image:
-                    result.generated_image_base64 = generated_image
-                    # Update the response content with the new result
-                    response.content = result
-
+            # Image generation removed: Nebius has no image-generation models.
+            # generated_image_base64 stays None; the photo is still used for analysis.
+            logger.info(f"Try-on analysis complete (image generation unavailable): {result.product_name}")
             return response
         except Exception as e:
             if attempt < max_retries:

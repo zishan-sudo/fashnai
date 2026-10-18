@@ -26,10 +26,8 @@ python -m playwright install chromium
 ### 3. Configure Environment Variables
 Ensure `.env` file has:
 ```
-SERPER_API_KEY=your-serper-api-key
-GOOGLE_API_KEY_1=your-first-gemini-api-key
-GOOGLE_API_KEY_2=your-second-gemini-api-key
-GOOGLE_API_KEY_3=your-third-gemini-api-key
+NEBIUS_API_KEY=your-nebius-api-key
+TAVILY_API_KEY=your-tavily-api-key
 ```
 
 ### 4. Test Individual Agents
@@ -245,9 +243,9 @@ source .venv/bin/activate
 python -m playwright install chromium
 ```
 
-**Issue**: `Error from Gemini API: 404 NOT_FOUND`
-- Check `GOOGLE_API_KEY` in `.env`
-- Verify model ID is `gemini-2.5-flash` or `gemini-2.0-flash-exp`
+**Issue**: `Error from Nebius API: model not found`
+- Check `NEBIUS_API_KEY` in `.env`
+- Verify model IDs are `openai/gpt-oss-120b` or `openbmb/MiniCPM-V-4_5`
 
 **Issue**: `CORS error from frontend`
 - Ensure FastAPI server is running on port 8000

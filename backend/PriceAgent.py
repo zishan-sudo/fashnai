@@ -4,9 +4,9 @@ import os
 from textwrap import dedent
 from typing import List
 from agno.agent import Agent, RunOutput
-from agno.models.google import Gemini
+from agno.models.nebius import Nebius
 from agno.db.sqlite import SqliteDb
-from agno.tools.serper import SerperTools
+from agno.tools.tavily import TavilyTools
 from agno.tools.crawl4ai import Crawl4aiTools
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
@@ -21,18 +21,17 @@ logger.addHandler(handler)
 
 load_dotenv()
 
-# Use paid Gemini API key for all agents with SQLite database
-llm = Gemini(
-    id='gemini-2.0-flash',
-    api_key=os.getenv("GOOGLE_API_KEY"),
-    vertexai=False
+# Use Nebius API for all agents with SQLite database
+llm = Nebius(
+    id='openai/gpt-oss-120b',
+    api_key=os.getenv("NEBIUS_API_KEY"),
 )
 
 db = SqliteDb()  # SQLite instance created directly
 
 agent = Agent(
     model=llm,
-    tools=[SerperTools(), Crawl4aiTools()],
+    tools=[TavilyTools(enable_search=True, enable_extract=True), Crawl4aiTools()],
     db=db,  # SQLite instance
     enable_user_memories=True,
     markdown=True
@@ -70,7 +69,7 @@ def price_agent() -> Agent:
         name="Fashion Price Comparison Agent",
         model=llm,
         tools=[
-            SerperTools(),
+            TavilyTools(enable_search=True, enable_extract=True),
             Crawl4aiTools(max_length=12000),
         ],
         tool_call_limit=15,
@@ -97,11 +96,11 @@ def price_agent() -> Agent:
             - Identify unique product identifiers (style number, SKU, UPC, EAN, etc.)
         
         2. Search Phase
-            - IMPORTANT: Search for information about the place using the search_google function.Use the product name, brand, style number, and category to search for the same fashion item on other fashion platforms
+            - IMPORTANT: Search for information about the place using the web_search_using_tavily function.Use the product name, brand, style number, and category to search for the same fashion item on other fashion platforms
            
             - IMPORTANT: Use the web_crawler function to extract information from various websites on the search results, the overall analysis MUST contain evidence that was fetched using the crawler.
             - IMPORTANT: Crawl on all the weblinks on the search results for information
-            - Use search_google to find product listings with queries like:
+            - Use web_search_using_tavily to find product listings with queries like:
                 * "[Brand] [Style Number] [Product Name] buy"
                 * "[Brand] [Product Name] [Color] price"
                 * "[Product Name] [Brand] fashion"

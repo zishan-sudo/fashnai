@@ -12,8 +12,8 @@ echo ""
 if [ ! -f .env ]; then
     echo "❌ Error: .env file not found!"
     echo "Please create a .env file with your API keys:"
-    echo "  GOOGLE_API_KEY=your-google-api-key"
-    echo "  SERPER_API_KEY=your-serper-api-key"
+    echo "  NEBIUS_API_KEY=your-nebius-api-key"
+    echo "  TAVILY_API_KEY=your-tavily-api-key"
     exit 1
 fi
 
